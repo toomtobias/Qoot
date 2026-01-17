@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz - Skapa nytt quiz</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366f1',
+            'primary-hover': '#4f46e5',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 1s linear infinite; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen py-8 px-4">
+  <div class="max-w-3xl mx-auto">
+    <div class="flex items-center justify-between mb-8">
+      <h1 class="text-3xl font-bold text-gray-800">Skapa Quiz</h1>
+      <a href="/" class="text-gray-500 hover:text-gray-700">&larr; Tillbaka</a>
+    </div>
+
+    <!-- Tab navigation -->
+    <div class="flex gap-2 mb-6">
+      <button class="tab-btn flex-1 py-3 px-6 rounded-xl font-medium transition-colors bg-primary text-white" data-tab="create">
+        Skapa med AI
+      </button>
+      <button class="tab-btn flex-1 py-3 px-6 rounded-xl font-medium transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200" data-tab="import">
+        Importera JSON
+      </button>
+    </div>
+
+    <!-- Create with AI Tab -->
+    <div id="create-tab" class="tab-content">
+      <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-2">Skapa quiz med AI</h2>
+        <p class="text-gray-500 mb-6">Beskriv ditt quiz och AI:n genererar frågor åt dig.</p>
+
+        <form id="prompt-form">
+          <div class="mb-4">
+            <label for="prompt" class="block text-sm font-medium text-gray-700 mb-2">Beskriv ditt quiz:</label>
+            <textarea
+              id="prompt"
+              rows="4"
+              class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-primary focus:outline-none transition-colors resize-none"
+              placeholder="T.ex. 'Ett quiz om svensk historia med 5 frågor på mellannivå' eller 'JavaScript-quiz för nybörjare'"
+              required
+            ></textarea>
+          </div>
+          <button type="submit" class="bg-primary hover:bg-primary-hover text-white font-semibold py-3 px-6 rounded-xl transition-colors" id="generate-btn">
+            Generera frågor
+          </button>
+        </form>
+
+        <div id="loading" class="hidden text-center py-8">
+          <div class="w-10 h-10 border-4 border-gray-200 border-t-primary rounded-full spinner mx-auto mb-4"></div>
+          <p class="text-gray-500">Genererar frågor...</p>
+        </div>
+      </div>
+
+      <!-- Preview & Edit Questions -->
+      <div id="questions-preview" class="hidden">
+        <div class="bg-white rounded-2xl shadow-lg p-6 mb-6">
+          <h2 class="text-xl font-semibold text-gray-800 mb-4">Granska och redigera frågor</h2>
+          <div id="questions-list" class="space-y-4"></div>
+
+          <div class="flex gap-3 mt-6 pt-6 border-t border-gray-100">
+            <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-5 rounded-xl transition-colors" id="add-question-btn">
+              + Lägg till fråga
+            </button>
+            <button class="bg-primary hover:bg-primary-hover text-white font-semibold py-3 px-6 rounded-xl transition-colors ml-auto" id="create-session-btn">
+              Starta quiz
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Import JSON Tab -->
+    <div id="import-tab" class="tab-content hidden">
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-2">Importera quiz från JSON</h2>
+        <p class="text-gray-500 mb-6">Ladda upp en tidigare exporterad quiz-fil.</p>
+
+        <div class="mb-4">
+          <label for="json-file" class="block text-sm font-medium text-gray-700 mb-2">Välj JSON-fil:</label>
+          <input type="file" id="json-file" accept=".json" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-primary focus:outline-none transition-colors">
+        </div>
+
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-700 mb-2">Eller klistra in JSON:</label>
+          <textarea id="json-input" rows="6" class="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-primary focus:outline-none transition-colors font-mono text-sm resize-none" placeholder='[{"question": "...", "options": [...], "correctIndex": 0}]'></textarea>
+        </div>
+
+        <button class="bg-primary hover:bg-primary-hover text-white font-semibold py-3 px-6 rounded-xl transition-colors" id="import-btn">
+          Importera och starta
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    let questions = [];
+
+    const promptForm = document.getElementById('prompt-form');
+    const promptInput = document.getElementById('prompt');
+    const generateBtn = document.getElementById('generate-btn');
+    const loading = document.getElementById('loading');
+    const questionsPreview = document.getElementById('questions-preview');
+    const questionsList = document.getElementById('questions-list');
+    const addQuestionBtn = document.getElementById('add-question-btn');
+    const createSessionBtn = document.getElementById('create-session-btn');
+    const jsonFileInput = document.getElementById('json-file');
+    const jsonInput = document.getElementById('json-input');
+    const importBtn = document.getElementById('import-btn');
+    const tabBtns = document.querySelectorAll('.tab-btn');
+
+    // Tab switching
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        tabBtns.forEach(b => {
+          b.classList.remove('bg-primary', 'text-white');
+          b.classList.add('bg-gray-100', 'text-gray-600', 'hover:bg-gray-200');
+        });
+        btn.classList.remove('bg-gray-100', 'text-gray-600', 'hover:bg-gray-200');
+        btn.classList.add('bg-primary', 'text-white');
+
+        document.querySelectorAll('.tab-content').forEach(tab => tab.classList.add('hidden'));
+        document.getElementById(`${btn.dataset.tab}-tab`).classList.remove('hidden');
+      });
+    });
+
+    // Generate questions
+    promptForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const prompt = promptInput.value.trim();
+      if (!prompt) return;
+
+      generateBtn.disabled = true;
+      loading.classList.remove('hidden');
+      questionsPreview.classList.add('hidden');
+
+      try {
+        const response = await fetch('/api/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ prompt })
+        });
+
+        if (!response.ok) throw new Error('Failed to generate');
+
+        const data = await response.json();
+        questions = data.questions;
+        renderQuestions();
+        questionsPreview.classList.remove('hidden');
+      } catch (error) {
+        alert('Kunde inte generera frågor. Försök igen.');
+        console.error(error);
+      } finally {
+        generateBtn.disabled = false;
+        loading.classList.add('hidden');
+      }
+    });
+
+    function renderQuestions() {
+      questionsList.innerHTML = questions.map((q, qIndex) => `
+        <div class="bg-gray-50 rounded-xl p-4" data-index="${qIndex}">
+          <div class="flex items-center justify-between mb-3">
+            <span class="text-sm font-semibold text-primary">Fråga ${qIndex + 1}</span>
+            <button class="delete-question text-red-400 hover:text-red-600 text-xl font-bold leading-none" data-index="${qIndex}" title="Ta bort fråga">&times;</button>
+          </div>
+
+          <div class="mb-3">
+            <input type="text" class="question-text w-full px-3 py-2 border border-gray-200 rounded-lg focus:border-primary focus:outline-none" value="${escapeHtml(q.question)}" data-index="${qIndex}">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            ${q.options.map((opt, oIndex) => `
+              <label class="flex items-center gap-2 p-2 rounded-lg cursor-pointer ${oIndex === q.correctIndex ? 'bg-green-100 border-2 border-green-400' : 'bg-white border border-gray-200'}">
+                <input type="radio" name="correct-${qIndex}" ${oIndex === q.correctIndex ? 'checked' : ''} data-q="${qIndex}" data-o="${oIndex}" class="accent-green-500">
+                <input type="text" class="option-text flex-1 bg-transparent border-none focus:outline-none text-sm" value="${escapeHtml(opt)}" data-q="${qIndex}" data-o="${oIndex}">
+              </label>
+            `).join('')}
+          </div>
+        </div>
+      `).join('');
+
+      document.querySelectorAll('.question-text').forEach(input => {
+        input.addEventListener('change', (e) => {
+          questions[parseInt(e.target.dataset.index)].question = e.target.value;
+        });
+      });
+
+      document.querySelectorAll('.option-text').forEach(input => {
+        input.addEventListener('change', (e) => {
+          questions[parseInt(e.target.dataset.q)].options[parseInt(e.target.dataset.o)] = e.target.value;
+        });
+      });
+
+      document.querySelectorAll('input[type="radio"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          questions[parseInt(e.target.dataset.q)].correctIndex = parseInt(e.target.dataset.o);
+          renderQuestions();
+        });
+      });
+
+      document.querySelectorAll('.delete-question').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          questions.splice(parseInt(e.target.dataset.index), 1);
+          renderQuestions();
+        });
+      });
+    }
+
+    addQuestionBtn.addEventListener('click', () => {
+      questions.push({
+        question: 'Ny fråga',
+        options: ['Alternativ A', 'Alternativ B', 'Alternativ C', 'Alternativ D'],
+        correctIndex: 0
+      });
+      renderQuestions();
+    });
+
+    createSessionBtn.addEventListener('click', async () => {
+      if (questions.length === 0) {
+        alert('Lägg till minst en fråga');
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ questions })
+        });
+
+        if (!response.ok) throw new Error('Failed to create session');
+
+        const { sessionId } = await response.json();
+        window.location.href = `/host/${sessionId}`;
+      } catch (error) {
+        alert('Kunde inte skapa session. Försök igen.');
+        console.error(error);
+      }
+    });
+
+    jsonFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (event) => { jsonInput.value = event.target.result; };
+      reader.readAsText(file);
+    });
+
+    importBtn.addEventListener('click', async () => {
+      let importedQuestions;
+      try {
+        const jsonText = jsonInput.value.trim();
+        if (!jsonText) { alert('Klistra in JSON eller välj en fil'); return; }
+        const parsed = JSON.parse(jsonText);
+        importedQuestions = parsed.questions || parsed;
+        if (!Array.isArray(importedQuestions)) throw new Error('Invalid format');
+      } catch (error) { alert('Ogiltig JSON-format'); return; }
+
+      try {
+        const response = await fetch('/api/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ questions: importedQuestions })
+        });
+        if (!response.ok) throw new Error('Failed to import');
+        const { sessionId } = await response.json();
+        window.location.href = `/host/${sessionId}`;
+      } catch (error) {
+        alert('Kunde inte importera quiz. Kontrollera JSON-formatet.');
+        console.error(error);
+      }
+    });
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>

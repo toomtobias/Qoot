@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz - Host</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366f1',
+            'primary-hover': '#4f46e5',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 min-h-screen py-6 px-4">
+  <div class="max-w-3xl mx-auto">
+    <!-- Header -->
+    <header class="flex items-center justify-between mb-6 flex-wrap gap-4">
+      <h1 class="text-2xl font-bold text-gray-800">Quiz Host</h1>
+      <div class="flex items-center gap-3">
+        <span class="text-gray-500">Kod: <strong class="text-gray-800" id="session-id">-</strong></span>
+        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium transition-colors" id="copy-link-btn">
+          Kopiera länk
+        </button>
+      </div>
+    </header>
+
+    <!-- Lobby View -->
+    <div id="lobby-view" class="view space-y-4">
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Väntar på spelare...</h2>
+        <div class="bg-gray-50 rounded-xl p-4">
+          <p class="text-gray-500 text-sm mb-2">Dela denna länk med spelarna:</p>
+          <code class="block bg-white border border-gray-200 rounded-lg p-3 text-sm break-all" id="player-link">-</code>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Anslutna spelare (<span id="player-count">0</span>)</h3>
+        <ul id="player-list" class="space-y-2"></ul>
+        <p id="no-players" class="text-gray-400 text-center py-4">Inga spelare ännu...</p>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-lg p-6">
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Inställningar</h3>
+        <div class="flex items-center gap-3">
+          <label for="time-limit" class="text-gray-700">Tid per fråga:</label>
+          <input type="number" id="time-limit" min="5" max="120" value="30" class="w-20 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none">
+          <span class="text-gray-500">sekunder</span>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-5 rounded-xl transition-colors" id="export-btn">
+          Exportera quiz
+        </button>
+        <button class="bg-primary hover:bg-primary-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-semibold py-3 px-6 rounded-xl transition-colors ml-auto" id="start-btn" disabled>
+          Starta quiz
+        </button>
+      </div>
+    </div>
+
+    <!-- Question View -->
+    <div id="question-view" class="view hidden">
+      <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+        <div class="flex items-center justify-between mb-6">
+          <span class="text-gray-500">Fråga <span id="q-number">1</span> av <span id="q-total">5</span></span>
+          <span class="bg-amber-100 text-amber-700 font-bold text-2xl px-4 py-2 rounded-xl" id="timer">30</span>
+        </div>
+
+        <h2 class="text-2xl font-bold text-gray-800 mb-6" id="question-text">-</h2>
+
+        <div class="grid grid-cols-2 gap-3 mb-6" id="options-display"></div>
+
+        <p class="text-gray-500 mb-4">
+          <span id="answer-count">0</span> / <span id="total-players">0</span> har svarat
+        </p>
+
+        <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-lg transition-colors" id="skip-btn">
+          Hoppa över (visa svar)
+        </button>
+      </div>
+    </div>
+
+    <!-- Results View -->
+    <div id="results-view" class="view hidden">
+      <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Resultat</h2>
+        <p class="text-gray-500 mb-6">Rätt svar: <strong class="text-green-600" id="correct-answer">-</strong></p>
+
+        <div id="results-list" class="space-y-2 mb-6"></div>
+
+        <p class="text-gray-500">Nästa fråga om <span class="font-bold text-primary" id="countdown-host">5</span> sekund<span id="countdown-plural-host">er</span>...</p>
+      </div>
+    </div>
+
+    <!-- Podium View -->
+    <div id="podium-view" class="view hidden">
+      <div class="bg-white rounded-2xl shadow-lg p-6 text-center">
+        <h2 class="text-3xl font-bold text-gray-800 mb-8">Quiz avslutat!</h2>
+
+        <div id="podium" class="flex justify-center items-end gap-4 mb-8"></div>
+
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Alla resultat</h3>
+        <ol id="final-standings" class="space-y-2 mb-6 text-left max-w-md mx-auto"></ol>
+
+        <div class="flex gap-3 justify-center">
+          <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-5 rounded-xl transition-colors" id="export-final-btn">
+            Exportera quiz
+          </button>
+          <a href="/" class="bg-primary hover:bg-primary-hover text-white font-semibold py-3 px-6 rounded-xl transition-colors">
+            Nytt quiz
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Error View -->
+    <div id="error-view" class="view hidden">
+      <div class="bg-white rounded-2xl shadow-lg p-6 text-center border-2 border-red-200">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Session avslutad</h2>
+        <p class="text-gray-500 mb-6" id="error-message">Något gick fel.</p>
+        <a href="/" class="inline-block bg-primary hover:bg-primary-hover text-white font-semibold py-3 px-6 rounded-xl transition-colors">
+          Tillbaka till start
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const sessionId = window.location.pathname.split('/').pop();
+    let socket;
+    let questions = [];
+    let playerCount = 0;
+
+    const views = {
+      lobby: document.getElementById('lobby-view'),
+      question: document.getElementById('question-view'),
+      results: document.getElementById('results-view'),
+      podium: document.getElementById('podium-view'),
+      error: document.getElementById('error-view')
+    };
+
+    function showView(viewName) {
+      Object.values(views).forEach(v => v.classList.add('hidden'));
+      views[viewName].classList.remove('hidden');
+    }
+
+    function connect() {
+      socket = io();
+
+      socket.on('connect', () => {
+        socket.emit('host:join', sessionId);
+      });
+
+      socket.on('host:session', (data) => {
+        questions = data.questions;
+        document.getElementById('session-id').textContent = data.id;
+        document.getElementById('player-link').textContent = `${window.location.origin}/quiz/${data.id}`;
+        updatePlayerList(data.players);
+      });
+
+      socket.on('lobby:players', (players) => {
+        updatePlayerList(players);
+      });
+
+      socket.on('quiz:question', (data) => {
+        showQuestion(data);
+        showView('question');
+      });
+
+      socket.on('host:correctAnswer', (data) => {
+        highlightCorrectAnswer(data.correctIndex);
+      });
+
+      socket.on('quiz:timer', (data) => {
+        const timer = document.getElementById('timer');
+        timer.textContent = data.timeLeft;
+        if (data.timeLeft <= 5) {
+          timer.classList.remove('bg-amber-100', 'text-amber-700');
+          timer.classList.add('bg-red-100', 'text-red-700');
+        }
+      });
+
+      socket.on('host:answerCount', (data) => {
+        document.getElementById('answer-count').textContent = data.answered;
+        document.getElementById('total-players').textContent = data.total;
+      });
+
+      socket.on('quiz:results', (data) => {
+        showResults(data);
+        showView('results');
+      });
+
+      socket.on('quiz:countdown', (data) => {
+        document.getElementById('countdown-host').textContent = data.timeLeft;
+        document.getElementById('countdown-plural-host').textContent = data.timeLeft === 1 ? '' : 'er';
+
+        const countdownText = data.isLastQuestion ? 'Slutresultat om' : 'Nästa fråga om';
+        document.querySelector('#results-view p').textContent = `${countdownText} ${data.timeLeft} sekund${data.timeLeft === 1 ? '' : 'er'}...`;
+      });
+
+      socket.on('quiz:finished', (data) => {
+        showPodium(data);
+        showView('podium');
+      });
+
+      socket.on('session:ended', (data) => {
+        document.getElementById('error-message').textContent = data.reason;
+        showView('error');
+      });
+
+      socket.on('error', (data) => {
+        alert(data.message);
+      });
+    }
+
+    function updatePlayerList(players) {
+      playerCount = players.length;
+      document.getElementById('player-count').textContent = playerCount;
+      document.getElementById('total-players').textContent = playerCount;
+      document.getElementById('no-players').classList.toggle('hidden', playerCount > 0);
+
+      const list = document.getElementById('player-list');
+      list.innerHTML = players.map(p => `
+        <li class="flex items-center justify-between bg-gray-50 rounded-lg px-4 py-3">
+          <div class="flex items-center gap-3">
+            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}" alt="${escapeHtml(p.name)}" class="w-8 h-8 rounded-full">
+            <span class="font-medium text-gray-800">${escapeHtml(p.name)}</span>
+          </div>
+          <span class="text-gray-500">${p.score} poäng</span>
+        </li>
+      `).join('');
+
+      document.getElementById('start-btn').disabled = playerCount === 0;
+    }
+
+    function showQuestion(data) {
+      document.getElementById('q-number').textContent = data.questionNumber;
+      document.getElementById('q-total').textContent = data.totalQuestions;
+      const timer = document.getElementById('timer');
+      timer.textContent = data.timeLimit;
+      timer.classList.remove('bg-red-100', 'text-red-700');
+      timer.classList.add('bg-amber-100', 'text-amber-700');
+      document.getElementById('question-text').textContent = data.question;
+      document.getElementById('answer-count').textContent = '0';
+
+      document.getElementById('options-display').innerHTML = data.options.map((opt, i) => `
+        <div class="option-display flex items-center gap-3 bg-gray-50 rounded-xl p-4 text-left" data-index="${i}">
+          <span class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-600 flex-shrink-0">${['A', 'B', 'C', 'D'][i]}</span>
+          <span class="text-gray-800">${escapeHtml(opt)}</span>
+        </div>
+      `).join('');
+    }
+
+    function highlightCorrectAnswer(correctIndex) {
+      document.querySelectorAll('.option-display').forEach((opt, i) => {
+        if (i === correctIndex) {
+          opt.classList.remove('bg-gray-50');
+          opt.classList.add('bg-green-100', 'ring-2', 'ring-green-500');
+        }
+      });
+    }
+
+    function showResults(data) {
+      document.getElementById('correct-answer').textContent = data.correctAnswer;
+
+      document.getElementById('results-list').innerHTML = data.playerResults.map(p => `
+        <div class="flex items-center justify-between px-4 py-3 rounded-lg ${p.isCorrect ? 'bg-green-50 border-l-4 border-green-500' : 'bg-red-50 border-l-4 border-red-300'}">
+          <div class="flex items-center gap-3">
+            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}" alt="${escapeHtml(p.name)}" class="w-6 h-6 rounded-full">
+            <span class="font-medium text-gray-800">${escapeHtml(p.name)}</span>
+          </div>
+          <span class="font-bold ${p.isCorrect ? 'text-green-600' : 'text-gray-400'}">+${p.pointsEarned}</span>
+          <span class="text-gray-500">${p.totalScore} poäng</span>
+        </div>
+      `).join('');
+    }
+
+    function showPodium(data) {
+      const podiumColors = ['', 'from-yellow-400 to-amber-500', 'from-gray-300 to-gray-400', 'from-orange-400 to-orange-600'];
+      const podiumOrder = [2, 1, 3]; // Display order: 2nd, 1st, 3rd
+
+      document.getElementById('podium').innerHTML = podiumOrder.map(pos => {
+        const p = data.podium.find(x => x.position === pos);
+        if (!p) return '';
+        const height = pos === 1 ? 'pb-12' : pos === 2 ? 'pb-8' : 'pb-4';
+        return `
+          <div class="text-center bg-gradient-to-b ${podiumColors[pos]} text-white rounded-xl px-6 py-4 ${height} min-w-[100px]">
+            <div class="text-3xl mb-1">${['', '🥇', '🥈', '🥉'][pos]}</div>
+            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}" alt="${escapeHtml(p.name)}" class="w-12 h-12 rounded-full mx-auto mb-1">
+            <div class="font-bold">${escapeHtml(p.name)}</div>
+            <div class="text-sm opacity-80">${p.score} poäng</div>
+          </div>
+        `;
+      }).join('');
+
+      document.getElementById('final-standings').innerHTML = data.allResults.map((p, i) => `
+        <li class="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3">
+          <span class="font-bold text-gray-400 w-6">${i + 1}.</span>
+          <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}" alt="${escapeHtml(p.name)}" class="w-6 h-6 rounded-full">
+          <span class="flex-1 font-medium text-gray-800">${escapeHtml(p.name)}</span>
+          <span class="text-primary font-semibold">${p.score} poäng</span>
+        </li>
+      `).join('');
+    }
+
+    document.getElementById('copy-link-btn').addEventListener('click', () => {
+      navigator.clipboard.writeText(`${window.location.origin}/quiz/${sessionId}`).then(() => {
+        const btn = document.getElementById('copy-link-btn');
+        btn.textContent = 'Kopierad!';
+        setTimeout(() => btn.textContent = 'Kopiera länk', 2000);
+      });
+    });
+
+    document.getElementById('start-btn').addEventListener('click', () => {
+      const timeLimit = parseInt(document.getElementById('time-limit').value) || 30;
+      socket.emit('host:start', { timeLimit });
+    });
+    document.getElementById('skip-btn').addEventListener('click', () => socket.emit('host:skip'));
+    document.getElementById('export-btn').addEventListener('click', exportQuiz);
+    document.getElementById('export-final-btn').addEventListener('click', exportQuiz);
+
+    async function exportQuiz() {
+      try {
+        const response = await fetch(`/api/session/${sessionId}/export`);
+        if (!response.ok) throw new Error('Export failed');
+        const data = await response.json();
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `quiz-${sessionId}.json`;
+        a.click();
+      } catch (error) {
+        alert('Kunde inte exportera quiz');
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    connect();
+  </script>
+</body>
+</html>

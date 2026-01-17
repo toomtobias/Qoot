@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz - Gå med</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366f1',
+            'primary-hover': '#4f46e5',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
+      <h1 class="text-3xl font-bold text-gray-800 mb-2">Multiplayer Quiz</h1>
+      <p class="text-gray-500 mb-8">Ange quiz-koden för att gå med</p>
+
+      <form id="join-form">
+        <div class="mb-4">
+          <input
+            type="text"
+            id="quiz-id"
+            class="w-full px-4 py-4 text-2xl text-center tracking-widest border-2 border-gray-200 rounded-xl focus:border-primary focus:outline-none transition-colors"
+            placeholder="QUIZ-KOD"
+            maxlength="8"
+            autocomplete="off"
+            autofocus
+            required
+          >
+        </div>
+        <button type="submit" class="w-full bg-primary hover:bg-primary-hover text-white font-semibold py-4 px-6 rounded-xl transition-colors text-lg">
+          Gå med
+        </button>
+      </form>
+
+      <div id="error-message" class="text-red-500 mt-4 text-sm hidden"></div>
+
+      <div class="flex items-center my-8">
+        <div class="flex-1 h-px bg-gray-200"></div>
+        <span class="px-4 text-gray-400 text-sm">eller</span>
+        <div class="flex-1 h-px bg-gray-200"></div>
+      </div>
+
+      <a href="/create" class="block w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-4 px-6 rounded-xl transition-colors text-lg">
+        Skapa nytt quiz
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('join-form');
+    const quizIdInput = document.getElementById('quiz-id');
+    const errorMessage = document.getElementById('error-message');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errorMessage.classList.add('hidden');
+
+      const quizId = quizIdInput.value.trim().toLowerCase();
+      if (!quizId) return;
+
+      try {
+        const response = await fetch(`/api/session/${quizId}`);
+
+        if (response.ok) {
+          window.location.href = `/quiz/${quizId}`;
+        } else {
+          errorMessage.textContent = 'Quiz hittades inte. Kontrollera koden och försök igen.';
+          errorMessage.classList.remove('hidden');
+          quizIdInput.focus();
+          quizIdInput.select();
+        }
+      } catch (error) {
+        errorMessage.textContent = 'Kunde inte ansluta till servern.';
+        errorMessage.classList.remove('hidden');
+      }
+    });
+
+    quizIdInput.addEventListener('input', (e) => {
+      e.target.value = e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '');
+    });
+  </script>
+</body>
+</html>

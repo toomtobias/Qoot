@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quiz - Spela</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: '#6366f1',
+            'primary-hover': '#4f46e5',
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { animation: spin 1s linear infinite; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+  <div class="w-full max-w-lg">
+    <!-- Join View -->
+    <div id="join-view" class="view">
+      <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-800 mb-6">Gå med i quiz</h1>
+        <form id="join-form">
+          <div class="mb-4">
+            <input
+              type="text"
+              id="player-name"
+              class="w-full px-4 py-4 text-lg text-center border-2 border-gray-200 rounded-xl focus:border-primary focus:outline-none transition-colors"
+              placeholder="Ditt namn"
+              maxlength="20"
+              required
+              autofocus
+            >
+          </div>
+          <button type="submit" class="w-full bg-primary hover:bg-primary-hover text-white font-semibold py-4 px-6 rounded-xl transition-colors text-lg">
+            Gå med
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Lobby View -->
+    <div id="lobby-view" class="view hidden">
+      <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
+        <h2 class="text-xl font-semibold text-gray-800 mb-4">Väntar på att quizet ska starta...</h2>
+        <img id="player-avatar" src="" alt="Avatar" class="w-20 h-20 rounded-full mx-auto mb-4">
+        <p class="text-gray-500 mb-6">Du är med som: <strong class="text-gray-800" id="display-name">-</strong></p>
+
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Spelare i lobbyn:</h3>
+        <ul id="player-list" class="space-y-2 text-left"></ul>
+      </div>
+    </div>
+
+    <!-- Question View -->
+    <div id="question-view" class="view hidden">
+      <div class="bg-white rounded-2xl shadow-xl p-6">
+        <div class="flex items-center justify-between mb-4">
+          <span class="text-gray-500">Fråga <span id="q-number">1</span> av <span id="q-total">5</span></span>
+          <span class="bg-amber-100 text-amber-700 font-bold text-2xl px-4 py-2 rounded-xl" id="timer">30</span>
+        </div>
+
+        <h2 class="text-xl font-bold text-gray-800 mb-6 text-center" id="question-text">-</h2>
+
+        <div class="grid grid-cols-1 gap-3" id="options-player"></div>
+      </div>
+    </div>
+
+    <!-- Results View -->
+    <div id="results-view" class="view hidden">
+      <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
+        <h2 class="text-3xl font-bold mb-2" id="result-title">-</h2>
+        <p class="text-gray-500 mb-4">Rätt svar: <strong class="text-green-600" id="correct-answer">-</strong></p>
+
+        <div class="bg-gray-50 rounded-xl p-6 mb-6">
+          <span class="block text-4xl font-bold mb-2" id="points-earned">+0</span>
+          <span class="text-gray-500">Total: <span id="your-total" class="font-semibold text-gray-800">0</span> poäng</span>
+        </div>
+
+        <h3 class="text-lg font-semibold text-gray-800 mb-3">Ställning</h3>
+        <ol id="standings" class="space-y-2 text-left mb-4"></ol>
+
+        <p class="text-gray-500 text-sm">Nästa fråga om <span class="font-bold text-primary" id="countdown-player">5</span> sekund<span id="countdown-plural-player">er</span>...</p>
+      </div>
+    </div>
+
+    <!-- Podium View -->
+    <div id="podium-view" class="view hidden">
+      <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-800 mb-8">Quiz avslutat!</h1>
+
+        <div id="podium" class="flex justify-center items-end gap-3 mb-8"></div>
+
+        <div class="bg-gray-50 rounded-xl p-6 mb-6">
+          <h3 class="text-lg font-semibold text-gray-800 mb-2">Din placering</h3>
+          <p class="text-4xl font-bold text-primary mb-1">#<span id="your-position">-</span></p>
+          <p class="text-gray-500"><span id="your-final-score" class="font-semibold text-gray-800">0</span> poäng</p>
+        </div>
+
+        <a href="/" class="inline-block w-full bg-primary hover:bg-primary-hover text-white font-semibold py-4 px-6 rounded-xl transition-colors text-lg">
+          Spela igen
+        </a>
+      </div>
+    </div>
+
+    <!-- Error View -->
+    <div id="error-view" class="view hidden">
+      <div class="bg-white rounded-2xl shadow-xl p-8 text-center border-2 border-red-200">
+        <h2 class="text-2xl font-bold text-gray-800 mb-2">Något gick fel</h2>
+        <p class="text-gray-500 mb-6" id="error-message">Sessionen hittades inte.</p>
+        <a href="/" class="inline-block w-full bg-primary hover:bg-primary-hover text-white font-semibold py-4 px-6 rounded-xl transition-colors">
+          Tillbaka till start
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const sessionId = window.location.pathname.split('/').pop();
+    let socket;
+    let playerName = '';
+    let selectedAnswer = null;
+    let myScore = 0;
+
+    const views = {
+      join: document.getElementById('join-view'),
+      lobby: document.getElementById('lobby-view'),
+      question: document.getElementById('question-view'),
+      results: document.getElementById('results-view'),
+      podium: document.getElementById('podium-view'),
+      error: document.getElementById('error-view')
+    };
+
+    function showView(viewName) {
+      Object.values(views).forEach(v => v.classList.add('hidden'));
+      views[viewName].classList.remove('hidden');
+    }
+
+    async function checkSession() {
+      try {
+        const response = await fetch(`/api/session/${sessionId}`);
+        if (!response.ok) {
+          document.getElementById('error-message').textContent = 'Sessionen hittades inte.';
+          showView('error');
+          return false;
+        }
+        const data = await response.json();
+        if (data.status !== 'lobby') {
+          document.getElementById('error-message').textContent = 'Quizet har redan startat.';
+          showView('error');
+          return false;
+        }
+        return true;
+      } catch (error) {
+        document.getElementById('error-message').textContent = 'Kunde inte ansluta till servern.';
+        showView('error');
+        return false;
+      }
+    }
+
+    function connect() {
+      socket = io();
+
+      socket.on('connect', () => {
+        socket.emit('player:join', { sessionId, playerName });
+      });
+
+      socket.on('lobby:players', (players) => {
+        updatePlayerList(players);
+        const me = players.find(p => p.name === playerName);
+        if (me) myScore = me.score;
+      });
+
+      socket.on('quiz:question', (data) => {
+        selectedAnswer = null;
+        showQuestion(data);
+        showView('question');
+      });
+
+      socket.on('quiz:timer', (data) => {
+        const timer = document.getElementById('timer');
+        timer.textContent = data.timeLeft;
+        if (data.timeLeft <= 5) {
+          timer.classList.remove('bg-amber-100', 'text-amber-700');
+          timer.classList.add('bg-red-100', 'text-red-700');
+        }
+      });
+
+      socket.on('quiz:results', (data) => {
+        showResults(data);
+        showView('results');
+      });
+
+      socket.on('quiz:countdown', (data) => {
+        document.getElementById('countdown-player').textContent = data.timeLeft;
+        document.getElementById('countdown-plural-player').textContent = data.timeLeft === 1 ? '' : 'er';
+
+        const countdownText = data.isLastQuestion ? 'Slutresultat om' : 'Nästa fråga om';
+        document.querySelector('#results-view p').textContent = `${countdownText} ${data.timeLeft} sekund${data.timeLeft === 1 ? '' : 'er'}...`;
+      });
+
+      socket.on('quiz:finished', (data) => {
+        showPodium(data);
+        showView('podium');
+      });
+
+      socket.on('session:ended', (data) => {
+        document.getElementById('error-message').textContent = data.reason;
+        showView('error');
+      });
+
+      socket.on('error', (data) => {
+        document.getElementById('error-message').textContent = data.message;
+        showView('error');
+      });
+    }
+
+    function updatePlayerList(players) {
+      document.getElementById('player-list').innerHTML = players.map(p => `
+        <li class="flex items-center justify-between px-4 py-3 rounded-lg ${p.name === playerName ? 'bg-primary/10 ring-2 ring-primary' : 'bg-gray-50'}">
+          <div class="flex items-center gap-3">
+            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}" alt="${escapeHtml(p.name)}" class="w-8 h-8 rounded-full">
+            <span class="font-medium text-gray-800">${escapeHtml(p.name)}</span>
+          </div>
+          <span class="text-gray-500">${p.score} poäng</span>
+        </li>
+      `).join('');
+    }
+
+    function showQuestion(data) {
+      document.getElementById('q-number').textContent = data.questionNumber;
+      document.getElementById('q-total').textContent = data.totalQuestions;
+      const timer = document.getElementById('timer');
+      timer.textContent = data.timeLimit;
+      timer.classList.remove('bg-red-100', 'text-red-700');
+      timer.classList.add('bg-amber-100', 'text-amber-700');
+      document.getElementById('question-text').textContent = data.question;
+
+      document.getElementById('options-player').innerHTML = data.options.map((opt, i) => `
+        <button class="option-btn flex items-center gap-4 w-full p-4 bg-gray-50 hover:bg-gray-100 border-2 border-gray-200 rounded-xl text-left transition-all" data-index="${i}">
+          <span class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-600 flex-shrink-0">${['A', 'B', 'C', 'D'][i]}</span>
+          <span class="text-gray-800 font-medium">${escapeHtml(opt)}</span>
+        </button>
+      `).join('');
+
+      document.querySelectorAll('.option-btn').forEach(btn => {
+        btn.addEventListener('click', () => selectAnswer(parseInt(btn.dataset.index)));
+      });
+    }
+
+    function selectAnswer(index) {
+      selectedAnswer = index;
+      document.querySelectorAll('.option-btn').forEach((btn, i) => {
+        if (i === index) {
+          // Remove hover effect and unselected styles
+          btn.classList.remove('bg-gray-50', 'border-gray-200', 'hover:bg-gray-100');
+          // Add selected styles with !important background
+          btn.classList.add('!bg-primary', 'border-primary', 'text-white');
+          btn.querySelector('span:first-child').classList.remove('bg-gray-200', 'text-gray-600');
+          btn.querySelector('span:first-child').classList.add('bg-white', 'text-primary');
+          btn.querySelector('span:last-child').classList.remove('text-gray-800');
+          btn.querySelector('span:last-child').classList.add('text-white');
+        } else {
+          // Restore hover effect and unselected styles
+          btn.classList.add('bg-gray-50', 'border-gray-200', 'hover:bg-gray-100');
+          btn.classList.remove('!bg-primary', 'border-primary', 'text-white');
+          btn.querySelector('span:first-child').classList.add('bg-gray-200', 'text-gray-600');
+          btn.querySelector('span:first-child').classList.remove('bg-white', 'text-primary');
+          btn.querySelector('span:last-child').classList.add('text-gray-800');
+          btn.querySelector('span:last-child').classList.remove('text-white');
+        }
+      });
+      socket.emit('player:answer', index);
+    }
+
+    function showResults(data) {
+      const myResult = data.playerResults.find(p => p.name === playerName);
+
+      if (myResult) {
+        myScore = myResult.totalScore;
+        const isCorrect = myResult.isCorrect;
+        const resultTitle = document.getElementById('result-title');
+        resultTitle.textContent = isCorrect ? 'Rätt!' : 'Fel!';
+        resultTitle.className = `text-3xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-500'}`;
+
+        const pointsEl = document.getElementById('points-earned');
+        pointsEl.textContent = `+${myResult.pointsEarned}`;
+        pointsEl.className = `block text-4xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-gray-400'}`;
+
+        document.getElementById('your-total').textContent = myScore;
+      }
+
+      document.getElementById('correct-answer').textContent = data.correctAnswer;
+
+      document.getElementById('standings').innerHTML = data.playerResults.map((p, i) => `
+        <li class="flex items-center gap-3 px-4 py-3 rounded-lg ${p.name === playerName ? 'bg-primary/10 ring-2 ring-primary' : 'bg-gray-50'}">
+          <span class="font-bold text-gray-400 w-6">${i + 1}.</span>
+          <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}" alt="${escapeHtml(p.name)}" class="w-6 h-6 rounded-full">
+          <span class="flex-1 font-medium text-gray-800">${escapeHtml(p.name)}</span>
+          <span class="text-primary font-semibold">${p.totalScore}</span>
+        </li>
+      `).join('');
+    }
+
+    function showPodium(data) {
+      const podiumColors = ['', 'from-yellow-400 to-amber-500', 'from-gray-300 to-gray-400', 'from-orange-400 to-orange-600'];
+      const podiumOrder = [2, 1, 3];
+
+      document.getElementById('podium').innerHTML = podiumOrder.map(pos => {
+        const p = data.podium.find(x => x.position === pos);
+        if (!p) return '';
+        const height = pos === 1 ? 'pb-10' : pos === 2 ? 'pb-6' : 'pb-2';
+        const isMe = p.name === playerName;
+        return `
+          <div class="text-center bg-gradient-to-b ${podiumColors[pos]} text-white rounded-xl px-4 py-3 ${height} min-w-[80px]">
+            <div class="text-2xl mb-1">${['', '🥇', '🥈', '🥉'][pos]}</div>
+            <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}" alt="${escapeHtml(p.name)}" class="w-10 h-10 rounded-full mx-auto mb-1">
+            <div class="font-bold text-sm">${escapeHtml(p.name)}</div>
+            <div class="text-xs opacity-80">${p.score}</div>
+          </div>
+        `;
+      }).join('');
+
+      const myPosition = data.allResults.findIndex(p => p.name === playerName) + 1;
+      const myFinalScore = data.allResults.find(p => p.name === playerName)?.score || 0;
+
+      document.getElementById('your-position').textContent = myPosition;
+      document.getElementById('your-final-score').textContent = myFinalScore;
+    }
+
+    document.getElementById('join-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      playerName = document.getElementById('player-name').value.trim();
+      if (!playerName) return;
+
+      const sessionValid = await checkSession();
+      if (!sessionValid) return;
+
+      document.getElementById('display-name').textContent = playerName;
+      document.getElementById('player-avatar').src = `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(playerName)}`;
+
+      connect();
+      showView('lobby');
+    });
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
