@@ -70,12 +70,16 @@ async function generateQuizFromAI(prompt) {
 IMPORTANT RULES:
 - Generate exactly 10 questions unless the user specifies a different number
 - Each question must have exactly 4 answer options
+- Exactly one option must be correct per question.
+- Questions should be clear and concise
+- Avoid ambiguous or tricky questions
 - Return ONLY valid JSON, no markdown, no code blocks
 - The JSON must be an object with a "questions" array
 - Each question object must have: "question" (string), "options" (array of 4 strings), "correctIndex" (0-3)
+- Always answer in Swedish
 
 Example format:
-{"questions":[{"question":"What is 2+2?","options":["3","4","5","6"],"correctIndex":1}]}`;
+{"questions":[{"question":"Vad är 2+2?","options":["3","4","5","6"],"correctIndex":1}]}`;
 
   try {
     const response = await fetch(XAI_API_URL, {
@@ -85,7 +89,7 @@ Example format:
         'Authorization': `Bearer ${XAI_API_KEY}`
       },
       body: JSON.stringify({
-        model: 'grok-3-fast',
+        model: 'grok-4-fast',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: prompt }
