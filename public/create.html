@@ -112,6 +112,13 @@
   <script>
     let questions = [];
 
+    // Get API URL based on environment
+    const getApiUrl = () => {
+      return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000'
+        : 'https://qoot.up.railway.app';
+    };
+
     const promptForm = document.getElementById('prompt-form');
     const promptInput = document.getElementById('prompt');
     const generateBtn = document.getElementById('generate-btn');
@@ -151,7 +158,7 @@
       questionsPreview.classList.add('hidden');
 
       try {
-        const response = await fetch('/api/generate', {
+        const response = await fetch(`${getApiUrl()}/api/generate`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ prompt })
@@ -238,7 +245,7 @@
       }
 
       try {
-        const response = await fetch('/api/session', {
+        const response = await fetch(`${getApiUrl()}/api/session`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ questions })
@@ -273,7 +280,7 @@
       } catch (error) { alert('Ogiltig JSON-format'); return; }
 
       try {
-        const response = await fetch('/api/import', {
+        const response = await fetch(`${getApiUrl()}/api/import`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ questions: importedQuestions })

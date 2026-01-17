@@ -124,6 +124,12 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    const getApiUrl = () => {
+      return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000'
+        : 'https://qoot.up.railway.app';
+    };
+
     const sessionId = window.location.pathname.split('/').pop();
     let socket;
     let playerName = '';
@@ -146,7 +152,7 @@
 
     async function checkSession() {
       try {
-        const response = await fetch(`/api/session/${sessionId}`);
+        const response = await fetch(`${getApiUrl()}/api/session/${sessionId}`);
         if (!response.ok) {
           document.getElementById('error-message').textContent = 'Sessionen hittades inte.';
           showView('error');
@@ -167,7 +173,10 @@
     }
 
     function connect() {
-      socket = io();
+      const socketUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000'
+        : 'https://qoot.up.railway.app';
+      socket = io(socketUrl);
 
       socket.on('connect', () => {
         socket.emit('player:join', { sessionId, playerName });

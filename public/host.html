@@ -135,6 +135,12 @@
 
   <script src="/socket.io/socket.io.js"></script>
   <script>
+    const getApiUrl = () => {
+      return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000'
+        : 'https://qoot.up.railway.app';
+    };
+
     const sessionId = window.location.pathname.split('/').pop();
     let socket;
     let questions = [];
@@ -154,7 +160,10 @@
     }
 
     function connect() {
-      socket = io();
+      const socketUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000'
+        : 'https://qoot.up.railway.app';
+      socket = io(socketUrl);
 
       socket.on('connect', () => {
         socket.emit('host:join', sessionId);
@@ -330,7 +339,7 @@
 
     async function exportQuiz() {
       try {
-        const response = await fetch(`/api/session/${sessionId}/export`);
+        const response = await fetch(`${getApiUrl()}/api/session/${sessionId}/export`);
         if (!response.ok) throw new Error('Export failed');
         const data = await response.json();
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });

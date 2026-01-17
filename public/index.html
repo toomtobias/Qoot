@@ -57,6 +57,12 @@
   </div>
 
   <script>
+    const getApiUrl = () => {
+      return window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000'
+        : 'https://qoot.up.railway.app';
+    };
+
     const form = document.getElementById('join-form');
     const quizIdInput = document.getElementById('quiz-id');
     const errorMessage = document.getElementById('error-message');
@@ -69,7 +75,7 @@
       if (!quizId) return;
 
       try {
-        const response = await fetch(`/api/session/${quizId}`);
+        const response = await fetch(`${getApiUrl()}/api/session/${quizId}`);
 
         if (response.ok) {
           window.location.href = `/quiz/${quizId}`;
