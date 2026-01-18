@@ -50,7 +50,9 @@
     <!-- Lobby View -->
     <div id="lobby-view" class="view hidden">
       <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
-        <h2 class="text-xl font-semibold text-gray-800 mb-4">Väntar på att quizet ska starta...</h2>
+        <h2 class="text-3xl font-bold text-gray-800 mb-6" id="quiz-name-player">-</h2>
+        <p class="text-primary text-sm font-medium mb-6">Väntar på start...</p>
+
         <img id="player-avatar" src="" alt="Avatar" class="w-20 h-20 rounded-full mx-auto mb-4">
         <p class="text-gray-500 mb-6">Du är med som: <strong class="text-gray-800" id="display-name">-</strong></p>
 
@@ -70,6 +72,10 @@
         <h2 class="text-xl font-bold text-gray-800 mb-6 text-center" id="question-text">-</h2>
 
         <div class="grid grid-cols-1 gap-3" id="options-player"></div>
+
+        <p class="text-gray-500 text-center mt-6">
+          <span id="answer-count-player">0</span> / <span id="total-players-player">0</span> spelare har besvarat
+        </p>
       </div>
     </div>
 
@@ -182,8 +188,13 @@
         socket.emit('player:join', { sessionId, playerName });
       });
 
-      socket.on('lobby:players', (players) => {
+      socket.on('lobby:players', (data) => {
+        const players = Array.isArray(data) ? data : data.players;
+        const quizName = data.quizName || 'Quiz';
+
+        document.getElementById('quiz-name-player').textContent = quizName;
         updatePlayerList(players);
+
         const me = players.find(p => p.name === playerName);
         if (me) myScore = me.score;
       });
@@ -192,6 +203,11 @@
         selectedAnswer = null;
         showQuestion(data);
         showView('question');
+      });
+
+      socket.on('host:answerCount', (data) => {
+        document.getElementById('answer-count-player').textContent = data.answered;
+        document.getElementById('total-players-player').textContent = data.total;
       });
 
       socket.on('quiz:timer', (data) => {
@@ -244,6 +260,8 @@
     function showQuestion(data) {
       document.getElementById('q-number').textContent = data.questionNumber;
       document.getElementById('q-total').textContent = data.totalQuestions;
+      document.getElementById('answer-count-player').textContent = '0';
+      document.getElementById('total-players-player').textContent = data.totalPlayers || 0;
       const timer = document.getElementById('timer');
       timer.textContent = data.timeLimit;
       timer.classList.remove('bg-red-100', 'text-red-700');

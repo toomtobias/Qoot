@@ -40,6 +40,7 @@ const sessions = new Map(); // sessionId -> SessionData
  * Session data structure:
  * {
  *   id: string,
+ *   name: string,
  *   hostSocketId: string,
  *   questions: [{ question: string, options: string[], correctIndex: number }],
  *   players: Map<socketId, { name: string, score: number, currentAnswer: number | null }>,
@@ -73,13 +74,14 @@ IMPORTANT RULES:
 - Exactly one option must be correct per question.
 - Questions should be clear and concise
 - Avoid ambiguous or tricky questions
+- Also generate a catchy quiz name (3-8 words) based on the topic
 - Return ONLY valid JSON, no markdown, no code blocks
-- The JSON must be an object with a "questions" array
+- The JSON must be an object with a "name" field and a "questions" array
 - Each question object must have: "question" (string), "options" (array of 4 strings), "correctIndex" (0-3)
 - Always answer in Swedish
 
 Example format:
-{"questions":[{"question":"Vad är 2+2?","options":["3","4","5","6"],"correctIndex":1}]}`;
+{"name":"Svenska Historiens Höjdpunkter","questions":[{"question":"Vad är 2+2?","options":["3","4","5","6"],"correctIndex":1}]}`;
 
   try {
     const response = await fetch(XAI_API_URL, {
@@ -123,6 +125,7 @@ Example format:
       throw new Error('Invalid JSON response from AI');
     }
 
+    const name = parsed.name || 'Quiz';
     const questions = parsed.questions || parsed;
 
     if (!Array.isArray(questions) || questions.length === 0) {
@@ -137,7 +140,7 @@ Example format:
     }
 
     console.log(`[Grok] Generated ${questions.length} questions`);
-    return questions;
+    return { name, questions };
 
   } catch (error) {
     console.error('[Grok] Error:', error.message);
@@ -156,8 +159,8 @@ app.post('/api/generate', async (req, res) => {
     if (!prompt) {
       return res.status(400).json({ error: 'Prompt is required' });
     }
-    const questions = await generateQuizFromAI(prompt);
-    res.json({ questions });
+    const { name, questions } = await generateQuizFromAI(prompt);
+    res.json({ name, questions });
   } catch (error) {
     console.error('Error generating quiz:', error);
     res.status(500).json({ error: 'Failed to generate quiz' });
@@ -167,15 +170,17 @@ app.post('/api/generate', async (req, res) => {
 // Create new session
 app.post('/api/session', (req, res) => {
   try {
-    const { questions } = req.body;
+    const { name, questions } = req.body;
     if (!questions || !Array.isArray(questions) || questions.length === 0) {
       return res.status(400).json({ error: 'Questions array is required' });
     }
 
     const sessionId = uuidv4().slice(0, 8); // Short ID for easier sharing
+    const sanitizedName = (name || 'Quiz').trim().substring(0, 100);
 
     sessions.set(sessionId, {
       id: sessionId,
+      name: sanitizedName,
       hostSocketId: null,
       questions,
       players: new Map(),
@@ -217,6 +222,7 @@ app.get('/api/session/:id/export', (req, res) => {
   }
 
   res.json({
+    name: session.name,
     questions: session.questions,
     exportedAt: new Date().toISOString()
   });
@@ -225,7 +231,7 @@ app.get('/api/session/:id/export', (req, res) => {
 // Import quiz from JSON (creates new session)
 app.post('/api/import', (req, res) => {
   try {
-    const { questions } = req.body;
+    const { name, questions } = req.body;
     if (!questions || !Array.isArray(questions)) {
       return res.status(400).json({ error: 'Valid questions array required' });
     }
@@ -238,9 +244,11 @@ app.post('/api/import', (req, res) => {
     }
 
     const sessionId = uuidv4().slice(0, 8);
+    const sanitizedName = (name || 'Importerat Quiz').trim().substring(0, 100);
 
     sessions.set(sessionId, {
       id: sessionId,
+      name: sanitizedName,
       hostSocketId: null,
       questions,
       players: new Map(),
@@ -295,6 +303,7 @@ io.on('connection', (socket) => {
     // Send current session state to host
     socket.emit('host:session', {
       id: session.id,
+      name: session.name,
       questions: session.questions,
       players: Array.from(session.players.values()).map(p => ({ name: p.name, score: p.score })),
       status: session.status
@@ -337,7 +346,10 @@ io.on('connection', (socket) => {
 
     // Notify all in room about new player
     const playerList = Array.from(session.players.values()).map(p => ({ name: p.name, score: p.score }));
-    io.to(sessionId).emit('lobby:players', playerList);
+    io.to(sessionId).emit('lobby:players', {
+      quizName: session.name,
+      players: playerList
+    });
 
     console.log(`[Player] ${playerName} joined session: ${sessionId}`);
   });
@@ -387,9 +399,9 @@ io.on('connection', (socket) => {
     player.currentAnswer = answerIndex;
     console.log(`[Answer] ${player.name} answered: ${answerIndex} (${player.answerTime}s left)`);
 
-    // Notify host about answer count
+    // Notify all about answer count
     const answeredCount = Array.from(session.players.values()).filter(p => p.currentAnswer !== null).length;
-    io.to(session.hostSocketId).emit('host:answerCount', {
+    io.to(socket.sessionId).emit('host:answerCount', {
       answered: answeredCount,
       total: session.players.size
     });
@@ -422,7 +434,10 @@ io.on('connection', (socket) => {
       // Player disconnected
       session.players.delete(socket.id);
       const playerList = Array.from(session.players.values()).map(p => ({ name: p.name, score: p.score }));
-      io.to(socket.sessionId).emit('lobby:players', playerList);
+      io.to(socket.sessionId).emit('lobby:players', {
+        quizName: session.name,
+        players: playerList
+      });
       console.log(`[Player] ${socket.playerName} left session: ${socket.sessionId}`);
     }
   });
@@ -452,7 +467,8 @@ function sendQuestion(session) {
     totalQuestions,
     question: question.question,
     options: question.options,
-    timeLimit
+    timeLimit,
+    totalPlayers: session.players.size
   });
 
   // Send correct answer only to host

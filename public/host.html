@@ -33,6 +33,11 @@
 
     <!-- Lobby View -->
     <div id="lobby-view" class="view space-y-4">
+      <div class="bg-gradient-to-r from-primary to-primary-hover rounded-2xl shadow-lg p-6 text-center">
+        <p class="text-white/80 text-sm uppercase tracking-wide mb-2">Quiz</p>
+        <h2 class="text-3xl font-bold text-white" id="quiz-name-display">-</h2>
+      </div>
+
       <div class="bg-white rounded-2xl shadow-lg p-6">
         <h2 class="text-xl font-semibold text-gray-800 mb-4">Väntar på spelare...</h2>
         <div class="bg-gray-50 rounded-xl p-4">
@@ -172,11 +177,13 @@
       socket.on('host:session', (data) => {
         questions = data.questions;
         document.getElementById('session-id').textContent = data.id;
+        document.getElementById('quiz-name-display').textContent = data.name || 'Quiz';
         document.getElementById('player-link').textContent = `${window.location.origin}/quiz/${data.id}`;
         updatePlayerList(data.players);
       });
 
-      socket.on('lobby:players', (players) => {
+      socket.on('lobby:players', (data) => {
+        const players = Array.isArray(data) ? data : data.players;
         updatePlayerList(players);
       });
 
