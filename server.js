@@ -71,7 +71,7 @@ async function generateQuizFromAI(prompt) {
 IMPORTANT RULES:
 - Generate exactly 10 questions unless the user specifies a different number
 - Each question must have exactly 4 answer options
-- Exactly one option must be correct per question.
+- Exactly one option must be correct per question. Make sure not all questions have the same correct option index
 - Questions should be clear and concise
 - Avoid ambiguous or tricky questions
 - Also generate a catchy quiz name (3-8 words) based on the topic
