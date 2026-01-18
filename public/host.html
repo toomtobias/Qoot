@@ -209,11 +209,8 @@
       });
 
       socket.on('quiz:countdown', (data) => {
-        document.getElementById('countdown-host').textContent = data.timeLeft;
-        document.getElementById('countdown-plural-host').textContent = data.timeLeft === 1 ? '' : 'er';
-
         const countdownText = data.isLastQuestion ? 'Slutresultat om' : 'Nästa fråga om';
-        document.querySelector('#results-view p').textContent = `${countdownText} ${data.timeLeft} sekund${data.timeLeft === 1 ? '' : 'er'}...`;
+        document.querySelector('#results-view p:last-of-type').innerHTML = `${countdownText} <span class="font-bold text-primary" id="countdown-host">${data.timeLeft}</span> sekund<span id="countdown-plural-host">${data.timeLeft === 1 ? '' : 'er'}</span>...`;
       });
 
       socket.on('quiz:finished', (data) => {
