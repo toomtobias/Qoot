@@ -418,6 +418,19 @@ io.on('connection', (socket) => {
       answered: answeredCount,
       total: session.players.size
     });
+
+    // Calculate answer statistics for host display
+    const answerStats = [0, 0, 0, 0]; // Count for each option A, B, C, D
+    for (const player of session.players.values()) {
+      if (player.currentAnswer !== null) {
+        answerStats[player.currentAnswer]++;
+      }
+    }
+
+    // Send answer statistics only to host
+    io.to(session.hostSocketId).emit('host:answerStats', {
+      stats: answerStats
+    });
   });
 
   // Host skips to next question (optional)

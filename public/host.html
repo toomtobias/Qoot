@@ -151,6 +151,7 @@
     let questions = [];
     let playerCount = 0;
     let lastBeepTime = 0;
+    let answerStats = [0, 0, 0, 0]; // Track how many players selected each answer
 
     // Simple beep function using Web Audio API
     function playBeep() {
@@ -267,6 +268,11 @@
         document.getElementById('total-players').textContent = data.total;
       });
 
+      socket.on('host:answerStats', (data) => {
+        answerStats = data.stats;
+        updateAnswerStats();
+      });
+
       socket.on('quiz:results', (data) => {
         showResults(data);
         showView('results');
@@ -312,6 +318,15 @@
       document.getElementById('start-btn').disabled = playerCount === 0;
     }
 
+    function updateAnswerStats() {
+      for (let i = 0; i < 4; i++) {
+        const element = document.querySelector(`.answer-count-${i}`);
+        if (element) {
+          element.textContent = answerStats[i];
+        }
+      }
+    }
+
     function showQuestion(data) {
       document.getElementById('q-number').textContent = data.questionNumber;
       document.getElementById('q-total').textContent = data.totalQuestions;
@@ -321,11 +336,15 @@
       timer.classList.add('bg-amber-100', 'text-amber-700');
       document.getElementById('question-text').textContent = data.question;
       document.getElementById('answer-count').textContent = '0';
+      answerStats = [0, 0, 0, 0]; // Reset statistics for new question
 
       document.getElementById('options-display').innerHTML = data.options.map((opt, i) => `
-        <div class="option-display flex items-center gap-3 bg-gray-50 rounded-xl p-4 text-left" data-index="${i}">
-          <span class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-600 flex-shrink-0">${['A', 'B', 'C', 'D'][i]}</span>
-          <span class="text-gray-800">${escapeHtml(opt)}</span>
+        <div class="option-display flex items-center justify-between bg-gray-50 rounded-xl p-4 text-left" data-index="${i}">
+          <div class="flex items-center gap-3 flex-1">
+            <span class="w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-600 flex-shrink-0">${['A', 'B', 'C', 'D'][i]}</span>
+            <span class="text-gray-800">${escapeHtml(opt)}</span>
+          </div>
+          <span class="text-sm font-semibold text-primary ml-2 answer-count-${i}">0</span>
         </div>
       `).join('');
     }
