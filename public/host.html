@@ -115,11 +115,14 @@
         <h3 class="text-lg font-semibold text-gray-800 mb-4">Alla resultat</h3>
         <ol id="final-standings" class="space-y-2 mb-6 text-left max-w-md mx-auto"></ol>
 
-        <div class="flex gap-3 justify-center">
+        <div class="flex gap-3 justify-center flex-wrap">
+          <button class="bg-primary hover:bg-primary-hover text-white font-semibold py-3 px-6 rounded-xl transition-colors" id="play-again-btn">
+            Spela igen
+          </button>
           <button class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-5 rounded-xl transition-colors" id="export-final-btn">
             Exportera quiz
           </button>
-          <a href="/" class="bg-primary hover:bg-primary-hover text-white font-semibold py-3 px-6 rounded-xl transition-colors">
+          <a href="/" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-5 rounded-xl transition-colors">
             Nytt quiz
           </a>
         </div>
@@ -416,6 +419,7 @@
     document.getElementById('skip-btn').addEventListener('click', () => socket.emit('host:skip'));
     document.getElementById('export-btn').addEventListener('click', exportQuiz);
     document.getElementById('export-final-btn').addEventListener('click', exportQuiz);
+    document.getElementById('play-again-btn').addEventListener('click', playAgain);
 
     async function exportQuiz() {
       try {
@@ -429,6 +433,32 @@
         a.click();
       } catch (error) {
         alert('Kunde inte exportera quiz');
+      }
+    }
+
+    async function playAgain() {
+      try {
+        // Get current quiz data from export
+        const response = await fetch(`${getApiUrl()}/api/session/${sessionId}/export`);
+        if (!response.ok) throw new Error('Failed to get quiz data');
+        const data = await response.json();
+
+        // Create new session with same questions and name
+        const newSessionResponse = await fetch(`${getApiUrl()}/api/session`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: data.name,
+            questions: data.questions
+          })
+        });
+
+        if (!newSessionResponse.ok) throw new Error('Failed to create session');
+        const { sessionId: newSessionId } = await newSessionResponse.json();
+        window.location.href = `/host/${newSessionId}`;
+      } catch (error) {
+        alert('Kunde inte starta om quizet');
+        console.error(error);
       }
     }
 
