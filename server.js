@@ -320,38 +320,51 @@ io.on('connection', (socket) => {
       return;
     }
 
-    if (session.status !== 'lobby') {
+    // Check if player is already in this session (reconnect scenario)
+    const existingPlayer = Array.from(session.players.values()).find(p => p.name.toLowerCase() === playerName.toLowerCase());
+    const isReconnect = existingPlayer !== undefined;
+
+    if (session.status !== 'lobby' && !isReconnect) {
       socket.emit('error', { message: 'Quiz has already started' });
       return;
     }
 
-    // Check for duplicate names
-    const existingNames = Array.from(session.players.values()).map(p => p.name.toLowerCase());
-    if (existingNames.includes(playerName.toLowerCase())) {
-      socket.emit('error', { message: 'Namnet är redan taget, välj ett annat' });
-      return;
-    }
+    if (!isReconnect) {
+      // New player joining during lobby phase
+      // Check for duplicate names
+      const existingNames = Array.from(session.players.values()).map(p => p.name.toLowerCase());
+      if (existingNames.includes(playerName.toLowerCase())) {
+        socket.emit('error', { message: 'Namnet är redan taget, välj ett annat' });
+        return;
+      }
 
-    // Add player to session
-    session.players.set(socket.id, {
-      name: playerName,
-      score: 0,
-      currentAnswer: null
-    });
+      // Add new player to session
+      session.players.set(socket.id, {
+        name: playerName,
+        score: 0,
+        currentAnswer: null
+      });
+      console.log(`[Player] ${playerName} joined session: ${sessionId}`);
+    } else {
+      // Player is reconnecting - update their socket id but keep their data
+      const oldSocketId = Array.from(session.players.entries()).find(([_, p]) => p.name.toLowerCase() === playerName.toLowerCase())[0];
+      const playerData = session.players.get(oldSocketId);
+      session.players.delete(oldSocketId);
+      session.players.set(socket.id, playerData);
+      console.log(`[Player] ${playerName} reconnected to session: ${sessionId}`);
+    }
 
     socket.join(sessionId);
     socket.sessionId = sessionId;
     socket.isHost = false;
     socket.playerName = playerName;
 
-    // Notify all in room about new player
+    // Notify all in room about player list
     const playerList = Array.from(session.players.values()).map(p => ({ name: p.name, score: p.score }));
     io.to(sessionId).emit('lobby:players', {
       quizName: session.name,
       players: playerList
     });
-
-    console.log(`[Player] ${playerName} joined session: ${sessionId}`);
   });
 
   // Host starts the quiz

@@ -141,6 +141,7 @@
     let playerName = '';
     let selectedAnswer = null;
     let myScore = 0;
+    let isConnected = false;
 
     const views = {
       join: document.getElementById('join-view'),
@@ -185,10 +186,14 @@
       socket = io(socketUrl);
 
       socket.on('connect', () => {
-        socket.emit('player:join', { sessionId, playerName });
+        // Only join if this is the first connection, otherwise just reconnect silently
+        if (!isConnected) {
+          socket.emit('player:join', { sessionId, playerName });
+        }
       });
 
       socket.on('lobby:players', (data) => {
+        isConnected = true;
         const players = Array.isArray(data) ? data : data.players;
         const quizName = data.quizName || 'Quiz';
 
@@ -240,8 +245,16 @@
       });
 
       socket.on('error', (data) => {
-        document.getElementById('error-message').textContent = data.message;
-        showView('error');
+        // Only show error on first connection attempt, not on reconnect
+        if (!isConnected) {
+          document.getElementById('error-message').textContent = data.message;
+          showView('error');
+        }
+        // On reconnect during active game, just silently reconnect without showing error
+      });
+
+      socket.on('disconnect', () => {
+        console.log('[Socket] Disconnected - will attempt automatic reconnect');
       });
     }
 
