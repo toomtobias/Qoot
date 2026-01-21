@@ -387,10 +387,13 @@ io.on('connection', (socket) => {
     session.status = 'playing';
     session.currentQuestionIndex = 0;
 
-    // Reset all player answers
+    // Reset all player answers and initialize correct answer count
     for (const player of session.players.values()) {
       player.currentAnswer = null;
       player.answerTime = null;
+      if (!player.correctAnswers) {
+        player.correctAnswers = 0;
+      }
     }
 
     console.log(`[Quiz] Started: ${session.id} with ${session.timeLimit}s per question`);
@@ -537,6 +540,11 @@ function endQuestion(session) {
 
     player.score += pointsEarned;
 
+    // Track correct answers
+    if (isCorrect) {
+      player.correctAnswers++;
+    }
+
     results.push({
       name: player.name,
       answer: player.currentAnswer,
@@ -587,9 +595,14 @@ function endQuestion(session) {
 function endQuiz(session) {
   session.status = 'finished';
 
-  // Get final standings
+  // Get final standings with correct answer counts
   const standings = Array.from(session.players.values())
-    .map(p => ({ name: p.name, score: p.score }))
+    .map(p => ({
+      name: p.name,
+      score: p.score,
+      correctAnswers: p.correctAnswers || 0,
+      totalQuestions: session.questions.length
+    }))
     .sort((a, b) => b.score - a.score);
 
   // Podium (top 3)
