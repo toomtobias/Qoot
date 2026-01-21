@@ -399,7 +399,10 @@
         <li class="flex items-center gap-3 px-4 py-3 rounded-lg ${p.name === playerName ? 'bg-primary/10 ring-2 ring-primary' : 'bg-gray-50'}">
           <span class="font-bold text-gray-400 w-6">${i + 1}.</span>
           <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}" alt="${escapeHtml(p.name)}" class="w-6 h-6 rounded-full">
-          <span class="flex-1 font-medium text-gray-800">${escapeHtml(p.name)}</span>
+          <span class="flex-1 font-medium text-gray-800">
+            ${escapeHtml(p.name)}
+            ${p.streak > 1 ? `<span class="ml-2">🔥${p.streak}</span>` : ''}
+          </span>
           <span class="font-bold ${p.isCorrect ? 'text-green-600' : 'text-gray-400'}">+${p.pointsEarned}</span>
           <span class="text-gray-500">${p.totalScore} poäng</span>
         </li>

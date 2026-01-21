@@ -380,19 +380,22 @@ io.on('connection', (socket) => {
       return;
     }
 
-    // Set time limit (default 30 seconds, min 5, max 120)
-    const timeLimit = data?.timeLimit || 30;
+    // Set time limit (default 20 seconds, min 5, max 120)
+    const timeLimit = data?.timeLimit || 20;
     session.timeLimit = Math.min(Math.max(timeLimit, 5), 120);
 
     session.status = 'playing';
     session.currentQuestionIndex = 0;
 
-    // Reset all player answers and initialize correct answer count
+    // Reset all player answers and initialize correct answer count and streak
     for (const player of session.players.values()) {
       player.currentAnswer = null;
       player.answerTime = null;
       if (!player.correctAnswers) {
         player.correctAnswers = 0;
+      }
+      if (!player.streak) {
+        player.streak = 0;
       }
     }
 
@@ -487,8 +490,8 @@ function sendQuestion(session) {
     player.answerTime = null;
   }
 
-  // Get time limit (default to 30 if not set)
-  const timeLimit = session.timeLimit || 30;
+  // Get time limit (default to 20 if not set)
+  const timeLimit = session.timeLimit || 20;
 
   // Send question to all (without correct answer)
   io.to(session.id).emit('quiz:question', {
@@ -523,7 +526,7 @@ function sendQuestion(session) {
 function endQuestion(session) {
   const question = session.questions[session.currentQuestionIndex];
   const results = [];
-  const TIME_LIMIT = session.timeLimit || 30;
+  const TIME_LIMIT = session.timeLimit || 20;
   const MAX_POINTS = 1000;
   const MIN_POINTS = 500; // Minimum points for correct answer
 
@@ -540,9 +543,12 @@ function endQuestion(session) {
 
     player.score += pointsEarned;
 
-    // Track correct answers
+    // Track correct answers and streak
     if (isCorrect) {
       player.correctAnswers++;
+      player.streak++;
+    } else {
+      player.streak = 0;
     }
 
     results.push({
@@ -551,7 +557,8 @@ function endQuestion(session) {
       isCorrect,
       pointsEarned,
       totalScore: player.score,
-      answerTime: player.answerTime
+      answerTime: player.answerTime,
+      streak: player.streak
     });
   }
 
@@ -595,13 +602,14 @@ function endQuestion(session) {
 function endQuiz(session) {
   session.status = 'finished';
 
-  // Get final standings with correct answer counts
+  // Get final standings with correct answer counts and streak
   const standings = Array.from(session.players.values())
     .map(p => ({
       name: p.name,
       score: p.score,
       correctAnswers: p.correctAnswers || 0,
-      totalQuestions: session.questions.length
+      totalQuestions: session.questions.length,
+      streak: p.streak || 0
     }))
     .sort((a, b) => b.score - a.score);
 
