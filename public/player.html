@@ -83,7 +83,7 @@
     <div id="results-view" class="view hidden">
       <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
         <h2 class="text-3xl font-bold mb-2" id="result-title">-</h2>
-        <p class="text-gray-500 mb-4">Rätt svar: <strong class="text-green-600" id="correct-answer">-</strong></p>
+        <p class="text-gray-500 mb-4">Rätt svar: <strong class="text-gray-800" id="correct-answer">-</strong></p>
 
         <div class="bg-gray-50 rounded-xl p-6 mb-6">
           <span class="block text-4xl font-bold mb-2" id="points-earned">+0</span>
@@ -383,8 +383,8 @@
         myScore = myResult.totalScore;
         const isCorrect = myResult.isCorrect;
         const resultTitle = document.getElementById('result-title');
-        resultTitle.textContent = isCorrect ? 'Rätt!' : 'Fel!';
-        resultTitle.className = `text-3xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-red-500'}`;
+        resultTitle.textContent = isCorrect ? '✅ Rätt!' : '❌ Fel!';
+        resultTitle.className = `text-3xl font-bold mb-2 text-gray-800`;
 
         const pointsEl = document.getElementById('points-earned');
         pointsEl.textContent = `+${myResult.pointsEarned}`;
