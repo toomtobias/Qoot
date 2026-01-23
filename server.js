@@ -411,10 +411,11 @@ io.on('connection', (socket) => {
     const player = session.players.get(socket.id);
     if (!player) return;
 
-    // Record time for final answer (update every time answer changes)
-    player.answerTime = session.timeLeft;
+    // Record time for final answer using server-side timing (milliseconds to seconds)
+    const responseTime = (Date.now() - session.questionStartTime) / 1000;
+    player.answerTime = responseTime;
     player.currentAnswer = answerIndex;
-    console.log(`[Answer] ${player.name} answered: ${answerIndex} (${player.answerTime}s left)`);
+    console.log(`[Answer] ${player.name} answered: ${answerIndex} (${responseTime.toFixed(2)}s after question sent)`);
 
     // Notify all about answer count
     const answeredCount = Array.from(session.players.values()).filter(p => p.currentAnswer !== null).length;
@@ -491,6 +492,9 @@ function sendQuestion(session) {
   // Get time limit (default to 20 if not set)
   const timeLimit = session.timeLimit || 20;
 
+  // Record when question was sent (for server-side timing)
+  session.questionStartTime = Date.now();
+
   // Send question to all (without correct answer)
   io.to(session.id).emit('quiz:question', {
     questionNumber,
@@ -535,7 +539,10 @@ function endQuestion(session) {
 
     if (isCorrect && player.answerTime !== null) {
       // Points based on speed: faster answers = more points (300-1500)
-      const timeBonus = ((TIME_LIMIT - player.answerTime) / TIME_LIMIT) * (MAX_POINTS - MIN_POINTS);
+      // answerTime is now in seconds from when question was sent
+      // Clamp to TIME_LIMIT to handle slow networks fairly
+      const effectiveTime = Math.min(player.answerTime, TIME_LIMIT);
+      const timeBonus = ((TIME_LIMIT - effectiveTime) / TIME_LIMIT) * (MAX_POINTS - MIN_POINTS);
       pointsEarned = Math.round(MIN_POINTS + timeBonus);
     }
 
