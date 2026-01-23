@@ -529,8 +529,8 @@ function endQuestion(session) {
   const question = session.questions[session.currentQuestionIndex];
   const results = [];
   const TIME_LIMIT = session.timeLimit || 20;
-  const MAX_POINTS = 1500;
-  const MIN_POINTS = 300; // Minimum points for correct answer
+  const MAX_POINTS = 1000;
+  const MIN_POINTS = 100; // Minimum points for correct answer
 
   // Calculate points for this question (faster = more points)
   for (const [socketId, player] of session.players) {
