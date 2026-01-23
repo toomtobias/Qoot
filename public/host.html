@@ -441,24 +441,30 @@
         const p = data.podium.find(x => x.position === pos);
         if (!p) return '';
         const height = pos === 1 ? 'pb-12' : pos === 2 ? 'pb-8' : 'pb-4';
+        const totalTime = (p.totalAnswerTime || 0).toFixed(1);
         return `
           <div class="text-center bg-gradient-to-b ${podiumColors[pos]} text-white rounded-xl px-6 py-4 ${height} min-w-[100px]">
             <div class="text-3xl mb-1">${['', '🥇', '🥈', '🥉'][pos]}</div>
             <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}" alt="${escapeHtml(p.name)}" class="w-12 h-12 rounded-full mx-auto mb-1">
             <div class="font-bold">${escapeHtml(p.name)}</div>
             <div class="text-sm opacity-80">${p.score} poäng</div>
+            <div class="text-xs opacity-70">${totalTime}s</div>
           </div>
         `;
       }).join('');
 
-      document.getElementById('final-standings').innerHTML = data.allResults.map((p, i) => `
+      document.getElementById('final-standings').innerHTML = data.allResults.map((p, i) => {
+        const totalTime = (p.totalAnswerTime || 0).toFixed(1);
+        return `
         <li class="flex items-center gap-3 bg-gray-50 dark:bg-gray-700 rounded-lg px-4 py-3">
           <span class="font-bold text-gray-400 dark:text-gray-500 w-6">${i + 1}.</span>
           <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}" alt="${escapeHtml(p.name)}" class="w-6 h-6 rounded-full">
           <span class="flex-1 font-medium text-gray-800 dark:text-gray-200">${escapeHtml(p.name)}</span>
+          <span class="text-gray-500 dark:text-gray-400 text-sm">${totalTime}s</span>
           <span class="text-primary font-semibold">${p.score} poäng</span>
         </li>
-      `).join('');
+      `;
+      }).join('');
     }
 
     document.getElementById('copy-link-btn').addEventListener('click', () => {

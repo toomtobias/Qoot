@@ -400,6 +400,9 @@ io.on('connection', (socket) => {
       if (!player.streak) {
         player.streak = 0;
       }
+      if (!player.totalAnswerTime) {
+        player.totalAnswerTime = 0;
+      }
     }
 
     console.log(`[Quiz] Started: ${session.id} with ${session.timeLimit}s per question`);
@@ -572,19 +575,30 @@ function endQuestion(session) {
       player.streak = 0;
     }
 
+    // Add answer time to total (if player answered)
+    if (player.answerTime !== null) {
+      player.totalAnswerTime += player.answerTime;
+    }
+
     results.push({
       name: player.name,
       answer: player.currentAnswer,
       isCorrect,
       pointsEarned,
       totalScore: player.score,
+      correctAnswers: player.correctAnswers,
+      totalAnswerTime: player.totalAnswerTime,
       answerTime: player.answerTime,
       streak: player.streak
     });
   }
 
-  // Sort by total score
-  results.sort((a, b) => b.totalScore - a.totalScore);
+  // Sort with tiebreakers: score, then correct answers, then total time (fastest wins)
+  results.sort((a, b) => {
+    if (b.totalScore !== a.totalScore) return b.totalScore - a.totalScore;
+    if (b.correctAnswers !== a.correctAnswers) return b.correctAnswers - a.correctAnswers;
+    return a.totalAnswerTime - b.totalAnswerTime;
+  });
 
   // Send results to all
   io.to(session.id).emit('quiz:results', {
@@ -630,15 +644,22 @@ function endQuiz(session) {
       score: p.score,
       correctAnswers: p.correctAnswers || 0,
       totalQuestions: session.questions.length,
-      streak: p.streak || 0
+      streak: p.streak || 0,
+      totalAnswerTime: p.totalAnswerTime || 0
     }))
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => {
+      // Sort with tiebreakers: score, then correct answers, then total time (fastest wins)
+      if (b.score !== a.score) return b.score - a.score;
+      if (b.correctAnswers !== a.correctAnswers) return b.correctAnswers - a.correctAnswers;
+      return a.totalAnswerTime - b.totalAnswerTime;
+    });
 
   // Podium (top 3)
   const podium = standings.slice(0, 3).map((player, index) => ({
     position: index + 1,
     name: player.name,
-    score: player.score
+    score: player.score,
+    totalAnswerTime: player.totalAnswerTime
   }));
 
   io.to(session.id).emit('quiz:finished', {
