@@ -384,6 +384,9 @@ io.on('connection', (socket) => {
     const timeLimit = data?.timeLimit || 20;
     session.timeLimit = Math.min(Math.max(timeLimit, 5), 120);
 
+    // Set game mode (default 'timer', can be 'all-answered')
+    session.gameMode = data?.gameMode || 'timer';
+
     session.status = 'playing';
     session.currentQuestionIndex = 0;
 
@@ -436,6 +439,19 @@ io.on('connection', (socket) => {
     io.to(session.hostSocketId).emit('host:answerStats', {
       stats: answerStats
     });
+
+    // Check if all players have answered in "all-answered" game mode
+    if (session.gameMode === 'all-answered') {
+      const allAnswered = Array.from(session.players.values()).every(p => p.currentAnswer !== null);
+      if (allAnswered) {
+        console.log(`[Quiz] All players answered. Ending question early.`);
+        if (session.timer) {
+          clearInterval(session.timer);
+          session.timer = null;
+        }
+        endQuestion(session);
+      }
+    }
   });
 
   // Host skips to next question (optional)

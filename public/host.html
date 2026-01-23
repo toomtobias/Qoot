@@ -53,11 +53,22 @@
       </div>
 
       <div class="bg-white rounded-2xl shadow-lg p-6">
-        <h3 class="text-lg font-semibold text-gray-800 mb-3">Inställningar</h3>
-        <div class="flex items-center gap-3">
-          <label for="time-limit" class="text-gray-700">Tid per fråga:</label>
-          <input type="number" id="time-limit" min="5" max="120" value="20" class="w-20 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none">
-          <span class="text-gray-500">sekunder</span>
+        <h3 class="text-lg font-semibold text-gray-800 mb-4">Inställningar</h3>
+        <div class="space-y-4">
+          <div class="flex items-center gap-3">
+            <label for="time-limit" class="text-gray-700">Tid per fråga:</label>
+            <input type="number" id="time-limit" min="5" max="120" value="20" class="w-20 px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none">
+            <span class="text-gray-500">sekunder</span>
+          </div>
+
+          <div class="flex items-center gap-3">
+            <label for="game-mode" class="text-gray-700">Spelläge:</label>
+            <select id="game-mode" class="px-3 py-2 border-2 border-gray-200 rounded-lg focus:border-primary focus:outline-none">
+              <option value="timer">Vänta på timer</option>
+              <option value="all-answered">Avsluta när alla svarat</option>
+            </select>
+            <span class="text-xs text-gray-500 ml-2">Frågan slutar när alla spelare har besvarat eller timern går ut</span>
+          </div>
         </div>
       </div>
 
@@ -416,8 +427,9 @@
     });
 
     document.getElementById('start-btn').addEventListener('click', () => {
-      const timeLimit = parseInt(document.getElementById('time-limit').value) || 30;
-      socket.emit('host:start', { timeLimit });
+      const timeLimit = parseInt(document.getElementById('time-limit').value) || 20;
+      const gameMode = document.getElementById('game-mode').value || 'timer';
+      socket.emit('host:start', { timeLimit, gameMode });
     });
     document.getElementById('skip-btn').addEventListener('click', () => socket.emit('host:skip'));
     document.getElementById('export-btn').addEventListener('click', exportQuiz);
