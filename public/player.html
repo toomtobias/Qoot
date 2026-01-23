@@ -7,6 +7,7 @@
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
+      darkMode: 'class',
       theme: {
         extend: {
           colors: {
@@ -22,18 +23,26 @@
     .spinner { animation: spin 1s linear infinite; }
   </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center p-4">
+<body class="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4 transition-colors">
+  <button class="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg transition-colors" id="dark-mode-toggle" title="Växla mellan light och dark mode">
+    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+      <!-- Sun icon (visible in light mode) -->
+      <circle class="sun-icon" cx="10" cy="10" r="5" opacity="1" style="transition: opacity 0.3s;"/>
+      <!-- Moon icon (visible in dark mode) -->
+      <path class="moon-icon" d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" opacity="0" style="transition: opacity 0.3s;"/>
+    </svg>
+  </button>
   <div class="w-full max-w-lg">
     <!-- Join View -->
     <div id="join-view" class="view">
-      <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
-        <h1 class="text-3xl font-bold text-gray-800 mb-6">Gå med i quiz</h1>
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-6">Gå med i quiz</h1>
         <form id="join-form">
           <div class="mb-4">
             <input
               type="text"
               id="player-name"
-              class="w-full px-4 py-4 text-lg text-center border-2 border-gray-200 rounded-xl focus:border-primary focus:outline-none transition-colors"
+              class="w-full px-4 py-4 text-lg text-center border-2 border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-800 dark:text-white rounded-xl focus:border-primary focus:outline-none transition-colors"
               placeholder="Ditt namn"
               maxlength="20"
               required
@@ -49,31 +58,31 @@
 
     <!-- Lobby View -->
     <div id="lobby-view" class="view hidden">
-      <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
-        <h2 class="text-3xl font-bold text-gray-800 mb-6" id="quiz-name-player">-</h2>
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
+        <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-6" id="quiz-name-player">-</h2>
         <p class="text-primary text-sm font-medium mb-6">Väntar på start...</p>
 
         <img id="player-avatar" src="" alt="Avatar" class="w-20 h-20 rounded-full mx-auto mb-4">
-        <p class="text-gray-500 mb-6">Du är med som: <strong class="text-gray-800" id="display-name">-</strong></p>
+        <p class="text-gray-500 dark:text-gray-400 mb-6">Du är med som: <strong class="text-gray-800 dark:text-gray-200" id="display-name">-</strong></p>
 
-        <h3 class="text-lg font-semibold text-gray-800 mb-3">Spelare i lobbyn:</h3>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Spelare i lobbyn:</h3>
         <ul id="player-list" class="space-y-2 text-left"></ul>
       </div>
     </div>
 
     <!-- Question View -->
     <div id="question-view" class="view hidden">
-      <div class="bg-white rounded-2xl shadow-xl p-6">
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
         <div class="flex items-center justify-between mb-4">
-          <span class="text-gray-500">Fråga <span id="q-number">1</span> av <span id="q-total">5</span></span>
-          <span class="bg-amber-100 text-amber-700 font-bold text-2xl px-4 py-2 rounded-xl" id="timer">30</span>
+          <span class="text-gray-500 dark:text-gray-400">Fråga <span id="q-number">1</span> av <span id="q-total">5</span></span>
+          <span class="bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-200 font-bold text-2xl px-4 py-2 rounded-xl" id="timer">30</span>
         </div>
 
-        <h2 class="text-xl font-bold text-gray-800 mb-6 text-center" id="question-text">-</h2>
+        <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-6 text-center" id="question-text">-</h2>
 
         <div class="grid grid-cols-1 gap-3" id="options-player"></div>
 
-        <p class="text-gray-500 text-center mt-6">
+        <p class="text-gray-500 dark:text-gray-400 text-center mt-6">
           <span id="answer-count-player">0</span> av <span id="total-players-player">0</span> spelare har besvarat
         </p>
       </div>
@@ -81,34 +90,34 @@
 
     <!-- Results View -->
     <div id="results-view" class="view hidden">
-      <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
-        <h2 class="text-3xl font-bold mb-2" id="result-title">-</h2>
-        <p class="text-gray-500 mb-4">Rätt svar: <strong class="text-gray-800" id="correct-answer">-</strong></p>
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
+        <h2 class="text-3xl font-bold text-gray-800 dark:text-white mb-2" id="result-title">-</h2>
+        <p class="text-gray-500 dark:text-gray-400 mb-4">Rätt svar: <strong class="text-gray-800 dark:text-gray-200" id="correct-answer">-</strong></p>
 
-        <div class="bg-gray-50 rounded-xl p-6 mb-6">
-          <span class="block text-4xl font-bold mb-2" id="points-earned">+0</span>
-          <span class="text-gray-500">Total: <span id="your-total" class="font-semibold text-gray-800">0</span> poäng</span>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6 mb-6">
+          <span class="block text-4xl font-bold text-gray-800 dark:text-white mb-2" id="points-earned">+0</span>
+          <span class="text-gray-500 dark:text-gray-400">Total: <span id="your-total" class="font-semibold text-gray-800 dark:text-gray-200">0</span> poäng</span>
         </div>
 
-        <h3 class="text-lg font-semibold text-gray-800 mb-3">Ställning</h3>
+        <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-3">Ställning</h3>
         <ol id="standings" class="space-y-2 text-left mb-4"></ol>
 
-        <p class="text-gray-500 text-sm">Nästa fråga om <span class="font-bold text-primary" id="countdown-player">5</span> sekund<span id="countdown-plural-player">er</span>...</p>
+        <p class="text-gray-500 dark:text-gray-400 text-sm">Nästa fråga om <span class="font-bold text-primary" id="countdown-player">5</span> sekund<span id="countdown-plural-player">er</span>...</p>
       </div>
     </div>
 
     <!-- Podium View -->
     <div id="podium-view" class="view hidden">
-      <div class="bg-white rounded-2xl shadow-xl p-8 text-center">
-        <h1 class="text-3xl font-bold text-gray-800 mb-8">Quiz avslutat!</h1>
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center">
+        <h1 class="text-3xl font-bold text-gray-800 dark:text-white mb-8">Quiz avslutat!</h1>
 
         <div id="podium" class="flex justify-center items-end gap-3 mb-8"></div>
 
-        <div class="bg-gray-50 rounded-xl p-6 mb-6">
-          <h3 class="text-lg font-semibold text-gray-800 mb-2">Din placering</h3>
+        <div class="bg-gray-50 dark:bg-gray-700 rounded-xl p-6 mb-6">
+          <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Din placering</h3>
           <p class="text-4xl font-bold text-primary mb-1">#<span id="your-position">-</span></p>
-          <p class="text-gray-500 mb-3"><span id="your-final-score" class="font-semibold text-gray-800">0</span> poäng</p>
-          <p class="text-gray-500 text-sm"><span id="your-correct-answers" class="font-semibold text-gray-800">0</span> av <span id="your-total-questions" class="font-semibold text-gray-800">0</span> korrekta svar</p>
+          <p class="text-gray-500 dark:text-gray-400 mb-3"><span id="your-final-score" class="font-semibold text-gray-800 dark:text-gray-200">0</span> poäng</p>
+          <p class="text-gray-500 dark:text-gray-400 text-sm"><span id="your-correct-answers" class="font-semibold text-gray-800 dark:text-gray-200">0</span> av <span id="your-total-questions" class="font-semibold text-gray-800 dark:text-gray-200">0</span> korrekta svar</p>
         </div>
 
         <a href="/" class="inline-block w-full bg-primary hover:bg-primary-hover text-white font-semibold py-4 px-6 rounded-xl transition-colors text-lg">
@@ -119,9 +128,9 @@
 
     <!-- Error View -->
     <div id="error-view" class="view hidden">
-      <div class="bg-white rounded-2xl shadow-xl p-8 text-center border-2 border-red-200">
-        <h2 class="text-2xl font-bold text-gray-800 mb-2">Något gick fel</h2>
-        <p class="text-gray-500 mb-6" id="error-message">Sessionen hittades inte.</p>
+      <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center border-2 border-red-200 dark:border-red-900">
+        <h2 class="text-2xl font-bold text-gray-800 dark:text-white mb-2">Något gick fel</h2>
+        <p class="text-gray-500 dark:text-gray-400 mb-6" id="error-message">Sessionen hittades inte.</p>
         <a href="/" class="inline-block w-full bg-primary hover:bg-primary-hover text-white font-semibold py-4 px-6 rounded-xl transition-colors">
           Tillbaka till start
         </a>
@@ -194,6 +203,30 @@
       } catch (e) {
         // Audio context not supported or user denied permission
       }
+    }
+
+    // Dark mode toggle
+    function initDarkMode() {
+      const toggle = document.getElementById('dark-mode-toggle');
+      const sunIcon = document.querySelector('.sun-icon');
+      const moonIcon = document.querySelector('.moon-icon');
+
+      // Load preference from localStorage
+      const isDark = localStorage.getItem('dark-mode') === 'true';
+      if (isDark) {
+        document.documentElement.classList.add('dark');
+        sunIcon.style.opacity = '0';
+        moonIcon.style.opacity = '1';
+      }
+
+      toggle.addEventListener('click', () => {
+        const isDarkMode = document.documentElement.classList.toggle('dark');
+        localStorage.setItem('dark-mode', isDarkMode);
+
+        // Animate icons
+        sunIcon.style.opacity = isDarkMode ? '0' : '1';
+        moonIcon.style.opacity = isDarkMode ? '1' : '0';
+      });
     }
 
     const views = {
@@ -318,12 +351,12 @@
 
     function updatePlayerList(players) {
       document.getElementById('player-list').innerHTML = players.map(p => `
-        <li class="flex items-center justify-between px-4 py-3 rounded-lg ${p.name === playerName ? 'bg-primary/10 ring-2 ring-primary' : 'bg-gray-50'}">
+        <li class="flex items-center justify-between px-4 py-3 rounded-lg ${p.name === playerName ? 'bg-primary/10 dark:bg-primary/20 ring-2 ring-primary' : 'bg-gray-50 dark:bg-gray-700'}">
           <div class="flex items-center gap-3">
             <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}" alt="${escapeHtml(p.name)}" class="w-8 h-8 rounded-full">
-            <span class="font-medium text-gray-800">${escapeHtml(p.name)}</span>
+            <span class="font-medium text-gray-800 dark:text-gray-200">${escapeHtml(p.name)}</span>
           </div>
-          <span class="text-gray-500">${p.score} poäng</span>
+          <span class="text-gray-500 dark:text-gray-400">${p.score} poäng</span>
         </li>
       `).join('');
     }
@@ -340,9 +373,9 @@
       document.getElementById('question-text').textContent = data.question;
 
       document.getElementById('options-player').innerHTML = data.options.map((opt, i) => `
-        <button class="option-btn flex items-center gap-4 w-full p-4 bg-gray-50 hover:bg-gray-100 border-2 border-gray-200 rounded-xl text-left transition-all" data-index="${i}">
-          <span class="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center font-bold text-gray-600 flex-shrink-0">${['A', 'B', 'C', 'D'][i]}</span>
-          <span class="text-gray-800 font-medium">${escapeHtml(opt)}</span>
+        <button class="option-btn flex items-center gap-4 w-full p-4 bg-gray-50 hover:bg-gray-100 dark:bg-gray-700 dark:hover:bg-gray-600 border-2 border-gray-200 dark:border-gray-600 rounded-xl text-left transition-all" data-index="${i}">
+          <span class="w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full flex items-center justify-center font-bold text-gray-600 dark:text-gray-300 flex-shrink-0">${['A', 'B', 'C', 'D'][i]}</span>
+          <span class="text-gray-800 dark:text-gray-200 font-medium">${escapeHtml(opt)}</span>
         </button>
       `).join('');
 
@@ -384,11 +417,11 @@
         const isCorrect = myResult.isCorrect;
         const resultTitle = document.getElementById('result-title');
         resultTitle.textContent = isCorrect ? '✅ Rätt!' : '❌ Fel!';
-        resultTitle.className = `text-3xl font-bold mb-2 text-gray-800`;
+        resultTitle.className = `text-3xl font-bold mb-2 text-gray-800 dark:text-white`;
 
         const pointsEl = document.getElementById('points-earned');
         pointsEl.textContent = `+${myResult.pointsEarned}`;
-        pointsEl.className = `block text-4xl font-bold mb-2 ${isCorrect ? 'text-green-600' : 'text-gray-400'}`;
+        pointsEl.className = `block text-4xl font-bold mb-2 ${isCorrect ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}`;
 
         document.getElementById('your-total').textContent = myScore;
       }
@@ -396,15 +429,15 @@
       document.getElementById('correct-answer').textContent = data.correctAnswer;
 
       document.getElementById('standings').innerHTML = data.playerResults.map((p, i) => `
-        <li class="flex items-center gap-3 px-4 py-3 rounded-lg ${p.name === playerName ? 'bg-primary/10 ring-2 ring-primary' : 'bg-gray-50'}">
-          <span class="font-bold text-gray-400 w-6">${i + 1}.</span>
+        <li class="flex items-center gap-3 px-4 py-3 rounded-lg ${p.name === playerName ? 'bg-primary/10 dark:bg-primary/20 ring-2 ring-primary' : 'bg-gray-50 dark:bg-gray-700'}">
+          <span class="font-bold text-gray-400 dark:text-gray-500 w-6">${i + 1}.</span>
           <img src="https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(p.name)}" alt="${escapeHtml(p.name)}" class="w-6 h-6 rounded-full">
-          <span class="flex-1 font-medium text-gray-800">
+          <span class="flex-1 font-medium text-gray-800 dark:text-gray-200">
             ${escapeHtml(p.name)}
             ${p.streak > 1 ? `<span class="ml-2">🔥${p.streak}</span>` : ''}
           </span>
-          <span class="font-bold ${p.isCorrect ? 'text-green-600' : 'text-gray-400'}">+${p.pointsEarned}</span>
-          <span class="text-gray-500">${p.totalScore} poäng</span>
+          <span class="font-bold ${p.isCorrect ? 'text-green-600 dark:text-green-400' : 'text-gray-400 dark:text-gray-500'}">+${p.pointsEarned}</span>
+          <span class="text-gray-500 dark:text-gray-400">${p.totalScore} poäng</span>
         </li>
       `).join('');
     }
@@ -439,6 +472,9 @@
       document.getElementById('your-correct-answers').textContent = myCorrectAnswers;
       document.getElementById('your-total-questions').textContent = totalQuestions;
     }
+
+    // Initialize dark mode
+    initDarkMode();
 
     document.getElementById('join-form').addEventListener('submit', async (e) => {
       e.preventDefault();
