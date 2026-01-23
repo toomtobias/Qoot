@@ -411,10 +411,8 @@ io.on('connection', (socket) => {
     const player = session.players.get(socket.id);
     if (!player) return;
 
-    // Only record time on first answer (can't improve time by changing answer)
-    if (player.currentAnswer === null) {
-      player.answerTime = session.timeLeft;
-    }
+    // Record time for final answer (update every time answer changes)
+    player.answerTime = session.timeLeft;
     player.currentAnswer = answerIndex;
     console.log(`[Answer] ${player.name} answered: ${answerIndex} (${player.answerTime}s left)`);
 
@@ -527,8 +525,8 @@ function endQuestion(session) {
   const question = session.questions[session.currentQuestionIndex];
   const results = [];
   const TIME_LIMIT = session.timeLimit || 20;
-  const MAX_POINTS = 1000;
-  const MIN_POINTS = 500; // Minimum points for correct answer
+  const MAX_POINTS = 1500;
+  const MIN_POINTS = 300; // Minimum points for correct answer
 
   // Calculate points for this question (faster = more points)
   for (const [socketId, player] of session.players) {
@@ -536,8 +534,8 @@ function endQuestion(session) {
     let pointsEarned = 0;
 
     if (isCorrect && player.answerTime !== null) {
-      // Points based on speed: 500-1000 depending on how fast
-      const timeBonus = (player.answerTime / TIME_LIMIT) * (MAX_POINTS - MIN_POINTS);
+      // Points based on speed: faster answers = more points (300-1500)
+      const timeBonus = ((TIME_LIMIT - player.answerTime) / TIME_LIMIT) * (MAX_POINTS - MIN_POINTS);
       pointsEarned = Math.round(MIN_POINTS + timeBonus);
     }
 
