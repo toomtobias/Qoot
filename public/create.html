@@ -24,30 +24,28 @@
   </style>
 </head>
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen py-8 px-4 transition-colors">
+  <button class="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg transition-colors" id="dark-mode-toggle" title="Växla mellan light och dark mode">
+    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+      <!-- Moon icon (visible in light mode - shows to switch to dark) -->
+      <path class="moon-icon" d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" opacity="1" style="transition: opacity 0.3s;"/>
+      <!-- Sun icon (visible in dark mode - shows to switch to light) -->
+      <g class="sun-icon" opacity="0" style="transition: opacity 0.3s;">
+        <circle cx="10" cy="10" r="4"/>
+        <circle cx="10" cy="2" r="1"/>
+        <circle cx="10" cy="18" r="1"/>
+        <circle cx="2" cy="10" r="1"/>
+        <circle cx="18" cy="10" r="1"/>
+        <circle cx="4.2" cy="4.2" r="0.8"/>
+        <circle cx="15.8" cy="15.8" r="0.8"/>
+        <circle cx="15.8" cy="4.2" r="0.8"/>
+        <circle cx="4.2" cy="15.8" r="0.8"/>
+      </g>
+    </svg>
+  </button>
   <div class="max-w-3xl mx-auto">
     <div class="flex items-center justify-between mb-8">
       <h1 class="text-3xl font-bold text-gray-800 dark:text-white">Skapa Quiz</h1>
-      <div class="flex items-center gap-3">
-        <a href="/" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">&larr; Tillbaka</a>
-        <button class="bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg transition-colors" id="dark-mode-toggle" title="Växla mellan light och dark mode">
-          <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-            <!-- Moon icon (visible in light mode - shows to switch to dark) -->
-            <path class="moon-icon" d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" opacity="1" style="transition: opacity 0.3s;"/>
-            <!-- Sun icon (visible in dark mode - shows to switch to light) -->
-            <g class="sun-icon" opacity="0" style="transition: opacity 0.3s;">
-              <circle cx="10" cy="10" r="4"/>
-              <circle cx="10" cy="2" r="1"/>
-              <circle cx="10" cy="18" r="1"/>
-              <circle cx="2" cy="10" r="1"/>
-              <circle cx="18" cy="10" r="1"/>
-              <circle cx="4.2" cy="4.2" r="0.8"/>
-              <circle cx="15.8" cy="15.8" r="0.8"/>
-              <circle cx="15.8" cy="4.2" r="0.8"/>
-              <circle cx="4.2" cy="15.8" r="0.8"/>
-            </g>
-          </svg>
-        </button>
-      </div>
+      <a href="/" class="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300">&larr; Tillbaka</a>
     </div>
 
     <!-- Tab navigation -->
