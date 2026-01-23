@@ -127,7 +127,7 @@
           <h3 class="text-lg font-semibold text-gray-800 dark:text-white mb-2">Din placering</h3>
           <p class="text-4xl font-bold text-primary mb-1">#<span id="your-position">-</span></p>
           <p class="text-gray-500 dark:text-gray-400 mb-3"><span id="your-final-score" class="font-semibold text-gray-800 dark:text-gray-200">0</span> poäng</p>
-          <p class="text-gray-500 dark:text-gray-400 text-sm"><span id="your-correct-answers" class="font-semibold text-gray-800 dark:text-gray-200">0</span> av <span id="your-total-questions" class="font-semibold text-gray-800 dark:text-gray-200">0</span> korrekta svar</p>
+          <p class="text-gray-500 dark:text-gray-400 text-sm"><span id="your-correct-answers" class="font-semibold text-gray-800 dark:text-gray-200">0</span> av <span id="your-total-questions" class="font-semibold text-gray-800 dark:text-gray-200">0</span> korrekta svar på <span id="your-total-time" class="font-semibold text-gray-800 dark:text-gray-200">0.0</span>s</p>
         </div>
 
         <a href="/" class="inline-block w-full bg-primary hover:bg-primary-hover text-white font-semibold py-4 px-6 rounded-xl transition-colors text-lg">
@@ -478,11 +478,13 @@
       const myFinalScore = myResult?.score || 0;
       const myCorrectAnswers = myResult?.correctAnswers || 0;
       const totalQuestions = myResult?.totalQuestions || 0;
+      const myTotalTime = (myResult?.totalAnswerTime || 0).toFixed(1);
 
       document.getElementById('your-position').textContent = myPosition;
       document.getElementById('your-final-score').textContent = myFinalScore;
       document.getElementById('your-correct-answers').textContent = myCorrectAnswers;
       document.getElementById('your-total-questions').textContent = totalQuestions;
+      document.getElementById('your-total-time').textContent = myTotalTime;
     }
 
     // Initialize dark mode
