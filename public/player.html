@@ -26,10 +26,20 @@
 <body class="bg-gray-50 dark:bg-gray-900 min-h-screen flex flex-col items-center justify-center p-4 transition-colors">
   <button class="absolute top-4 right-4 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg transition-colors" id="dark-mode-toggle" title="Växla mellan light och dark mode">
     <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-      <!-- Sun icon (visible in light mode) -->
-      <circle class="sun-icon" cx="10" cy="10" r="5" opacity="1" style="transition: opacity 0.3s;"/>
-      <!-- Moon icon (visible in dark mode) -->
-      <path class="moon-icon" d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" opacity="0" style="transition: opacity 0.3s;"/>
+      <!-- Moon icon (visible in light mode - shows to switch to dark) -->
+      <path class="moon-icon" d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" opacity="1" style="transition: opacity 0.3s;"/>
+      <!-- Sun icon (visible in dark mode - shows to switch to light) -->
+      <g class="sun-icon" opacity="0" style="transition: opacity 0.3s;">
+        <circle cx="10" cy="10" r="4"/>
+        <circle cx="10" cy="2" r="1"/>
+        <circle cx="10" cy="18" r="1"/>
+        <circle cx="2" cy="10" r="1"/>
+        <circle cx="18" cy="10" r="1"/>
+        <circle cx="4.2" cy="4.2" r="0.8"/>
+        <circle cx="15.8" cy="15.8" r="0.8"/>
+        <circle cx="15.8" cy="4.2" r="0.8"/>
+        <circle cx="4.2" cy="15.8" r="0.8"/>
+      </g>
     </svg>
   </button>
   <div class="w-full max-w-lg">
@@ -215,17 +225,17 @@
       const isDark = localStorage.getItem('dark-mode') === 'true';
       if (isDark) {
         document.documentElement.classList.add('dark');
-        sunIcon.style.opacity = '0';
-        moonIcon.style.opacity = '1';
+        sunIcon.style.opacity = '1';
+        moonIcon.style.opacity = '0';
       }
 
       toggle.addEventListener('click', () => {
         const isDarkMode = document.documentElement.classList.toggle('dark');
         localStorage.setItem('dark-mode', isDarkMode);
 
-        // Animate icons
-        sunIcon.style.opacity = isDarkMode ? '0' : '1';
-        moonIcon.style.opacity = isDarkMode ? '1' : '0';
+        // Animate icons - show what you CAN switch to
+        sunIcon.style.opacity = isDarkMode ? '1' : '0';
+        moonIcon.style.opacity = isDarkMode ? '0' : '1';
       });
     }
 
